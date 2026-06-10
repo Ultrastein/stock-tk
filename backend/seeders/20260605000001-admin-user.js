@@ -3,12 +3,10 @@ const { v4: uuidv4 } = require('uuid');
 
 module.exports = {
   async up(queryInterface) {
-    const existing = await queryInterface.rawSelect(
-      'usuarios',
-      { where: { email: 'admin@stock-tk.com' } },
-      ['id']
+    const [rows] = await queryInterface.sequelize.query(
+      `SELECT id FROM usuarios WHERE email = 'admin@stock-tk.com' LIMIT 1`
     );
-    if (existing) return; // already seeded
+    if (rows.length > 0) return; // already seeded
 
     await queryInterface.bulkInsert('usuarios', [{
       id:            uuidv4(),
