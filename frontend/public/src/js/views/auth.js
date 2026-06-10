@@ -174,7 +174,7 @@ export default class AuthView {
         return;
       }
 
-      this._setLoading(btnLogin, btnText, spinner, true, 'Iniciando sesión...');
+      this._setLoading(btnLogin, btnText, spinner, true, 'Iniciando sesión… (puede tardar ~40s)');
       errorEl.style.display = 'none';
 
       try {
@@ -183,8 +183,8 @@ export default class AuthView {
       } catch (err) {
         const msg = err.status === 401
           ? 'Credenciales incorrectas. Verificá tu email y contraseña.'
-          : err.status === 503
-            ? 'Sin conexión al servidor. Verificá que el backend esté activo.'
+          : (err.status === 503 || err.name === 'AbortError' || err.message?.includes('abort'))
+            ? 'El servidor está iniciando, puede tardar hasta 60 segundos. Intentá de nuevo en un momento.'
             : err.message || 'Error al iniciar sesión.';
         this._showError(errorEl, msg);
       } finally {

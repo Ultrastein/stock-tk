@@ -24,7 +24,7 @@ export async function request(method, path, body = null, options = {}) {
   };
 
   const controller = new AbortController();
-  const timeout = options.timeout || 12000;
+  const timeout = options.timeout || 20000;
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
   try {

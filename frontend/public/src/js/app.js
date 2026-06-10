@@ -5,7 +5,7 @@
 import { get, subscribe, setAuth, clearAuth, isAuthenticated, hasRole } from './store/state.js';
 import { userData }          from './store/db.js';
 import { init as initSync }  from './store/syncManager.js';
-import { auth as authApi }   from './api/endpoints.js';
+import { auth as authApi, warmup } from './api/endpoints.js';
 
 // ── Rutas ────────────────────────────────────────────────────────────────────
 // public: true  → ruta accesible sin autenticar
@@ -176,6 +176,9 @@ async function bootstrap() {
   _bootstrapped = true;
   initOfflineBar();
   initSync();
+
+  // Wake Render's free-tier backend before the user hits Login
+  if (navigator.onLine) warmup();
 
   await restoreSession();
 
