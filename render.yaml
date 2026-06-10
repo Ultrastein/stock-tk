@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: stock-tk-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npx sequelize-cli db:migrate
+    startCommand: npm start
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 24h
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: DATABASE_URL
+        fromDatabase:
+          name: stock-tk-db
+          property: connectionString
+      - key: FRONTEND_URL
+        value: https://ultrastein.github.io
+      - key: FIREBASE_PROJECT_ID
+        sync: false
+      - key: FIREBASE_CLIENT_EMAIL
+        sync: false
+      - key: FIREBASE_PRIVATE_KEY
+        sync: false
+
+databases:
+  - name: stock-tk-db
+    databaseName: control_stock
+    user: stock_tk
+    plan: free

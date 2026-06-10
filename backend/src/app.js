@@ -21,8 +21,21 @@ const app = express();
 app.use(helmet());
 
 // CORS
+const ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5500',
+  'http://127.0.0.1:5500',
+  'https://ultrastein.github.io',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: (origin, cb) => {
+    // Permitir requests sin origin (Postman, mobile, curl)
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error(`CORS: origen no permitido: ${origin}`));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Sync-ID'],

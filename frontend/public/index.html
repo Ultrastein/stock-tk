@@ -33,9 +33,11 @@
   <!-- Configuración Firebase — editá este archivo con tus credenciales -->
   <script src="src/js/firebase-config.js"></script>
 
-  <!-- Configuración de la API (overrideable por entorno) -->
+  <!-- URL del backend: producción (GitHub Pages) vs local -->
   <script>
-    window.API_BASE_URL = 'http://localhost:3000/api';
+    window.API_BASE_URL = location.hostname === 'ultrastein.github.io'
+      ? 'https://stock-tk-api.onrender.com/api'
+      : 'http://localhost:3000/api';
   </script>
 </head>
 <body>
