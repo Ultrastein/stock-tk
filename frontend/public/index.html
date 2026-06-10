@@ -41,9 +41,6 @@
   </script>
 </head>
 <body>
-  <!-- ── Shader background canvas (WebGL, sits behind all UI) ── -->
-  <canvas id="shader-bg" aria-hidden="true"></canvas>
-
   <!-- Barra offline -->
   <div id="offline-bar">📡 Sin conexión — los cambios se guardan y sincronizarán cuando haya red</div>
 
@@ -52,8 +49,8 @@
     <!-- El router inserta aquí la vista activa -->
   </div>
 
-  <!-- Shader background (plain script — must run before app.js) -->
-  <script src="src/js/shader-bg.js"></script>
+  <!-- Firma del proyecto -->
+  <div id="firma-proyecto">prof. Nicolas Kane</div>
 
   <!-- Entry point de la app -->
   <script type="module" src="src/js/app.js"></script>

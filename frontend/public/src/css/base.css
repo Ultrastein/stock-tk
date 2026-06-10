@@ -6,24 +6,30 @@ html, body {
   font-size: var(--text-base);
   line-height: 1.6;
   color: var(--text-primary);
-  background: var(--bg-base);
+  background: radial-gradient(ellipse at 60% 25%, #1a1535 0%, #07101f 65%);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-/* ── Shader canvas ──────────────────────────────────────────── */
-#shader-bg {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  z-index: 0;
-  pointer-events: none;
 }
 
 #offline-bar,
 #app {
   position: relative;
   z-index: 1;
+}
+
+/* ── Firma del proyecto ─────────────────────────────────────── */
+#firma-proyecto {
+  position: fixed;
+  bottom: var(--sp-4);
+  right: var(--sp-5);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-style: italic;
+  opacity: 0.55;
+  z-index: 2;
+  pointer-events: none;
+  user-select: none;
+  letter-spacing: 0.02em;
 }
 
 /* ── Tipografía ─────────────────────────────────────────────── */

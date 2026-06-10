@@ -1,5 +1,37 @@
-// frontend/public/src/js/app.js
-// SPA Router + Auth Guard + Bootstrap de la app.
+// © 2024 TK+ by Tecno Kids — Desarrollo: prof. Nicolas Kane
+// Software de uso exclusivo para instancias autorizadas.
+// Queda prohibida su copia, redistribución o uso en dominios no autorizados.
+
+// ── Protección de dominio ─────────────────────────────────────────────────────
+(function checkLicense() {
+  const host = location.hostname;
+  const ALLOWED = ['localhost', '127.0.0.1', 'ultrastein.github.io'];
+  if (ALLOWED.some(h => host === h || host.endsWith('.' + h))) return;
+
+  document.documentElement.style.cssText = 'height:100%;margin:0';
+  document.body.style.cssText =
+    'min-height:100%;display:flex;align-items:center;justify-content:center;' +
+    'background:#07101f;font-family:system-ui,sans-serif;text-align:center;padding:24px;margin:0';
+  document.body.innerHTML = `
+    <div>
+      <div style="background:#fff;border-radius:14px;padding:12px 20px;
+                  display:inline-block;margin-bottom:20px;box-shadow:0 4px 20px rgba(0,0,0,.4)">
+        <img src="icons/logo-tk.png" alt="TK+" style="width:130px;height:auto;display:block"
+             onerror="this.parentElement.innerHTML='<span style=\\'font-size:28px;font-weight:900;color:#a855f7\\'>TK+</span>'">
+      </div>
+      <h1 style="font-size:20px;font-weight:700;color:#fb7185;margin:0 0 10px">
+        Software no autorizado
+      </h1>
+      <p style="color:#7fa0c4;font-size:14px;max-width:360px;line-height:1.6;margin:0 auto">
+        Este software es propiedad de <strong style="color:#e8f1ff">TK+ by Tecno Kids</strong>
+        y no puede ser redistribuido ni utilizado en dominios no autorizados.<br><br>
+        <em style="color:#4a6080">Desarrollo: prof. Nicolas Kane</em>
+      </p>
+    </div>`;
+  throw new Error('[TK+] Unauthorized domain: ' + host);
+})();
+
+// ── SPA Router + Auth Guard + Bootstrap de la app.
 // Routing por hash: #/login, #/kiosk, #/dashboard, etc.
 
 import { get, subscribe, setAuth, clearAuth, isAuthenticated, hasRole } from './store/state.js';

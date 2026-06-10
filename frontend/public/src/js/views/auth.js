@@ -39,13 +39,12 @@ export default class AuthView {
 
           <!-- Logo -->
           <div class="login-logo">
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
-                 stroke="var(--accent)" stroke-width="2"
-                 style="margin:0 auto 8px;display:block" aria-hidden="true">
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-              <line x1="12" y1="22.08" x2="12" y2="12"/>
-            </svg>
+            <div style="background:#fff;border-radius:14px;padding:12px 20px;
+                        display:inline-block;margin-bottom:14px;
+                        box-shadow:0 4px 20px rgba(0,0,0,.35)">
+              <img src="icons/logo-tk.png" alt="TK+ by Tecno Kids"
+                   style="width:140px;height:auto;display:block">
+            </div>
             <h1>Control de Stock</h1>
             <p>Sistema de gestión de inventario y activos</p>
           </div>
