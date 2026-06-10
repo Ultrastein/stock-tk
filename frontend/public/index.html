@@ -10,7 +10,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>TK+ Stock</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="icons/icon-192x192.png">
+  <link rel="icon" href="icons/logo-tk.png">
+  <link rel="apple-touch-icon" href="icons/logo-tk.png">
 
   <!-- CSS del sistema de diseño -->
   <link rel="stylesheet" href="src/css/variables.css">
@@ -37,7 +38,7 @@
   <script>
     window.API_BASE_URL = location.hostname === 'ultrastein.github.io'
       ? 'https://stock-tk-api.onrender.com/api'
-      : 'http://localhost:3000/api';
+      : `http://${location.hostname}:3000/api`;
   </script>
 </head>
 <body>

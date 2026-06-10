@@ -136,7 +136,7 @@ export const alertas = {
 export const historial = {
   listar: (params = {}) => {
     const qs = new URLSearchParams(params).toString();
-    return api.get(qs ? `/historial?${qs}` : '/historial');
+    return api.get(qs ? `/historial?${qs}` : '/historial', { timeout: 60000 });
   },
 };
 

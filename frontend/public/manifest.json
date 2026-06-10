@@ -20,6 +20,12 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "icons/logo-tk.png",
+      "sizes": "900x547",
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

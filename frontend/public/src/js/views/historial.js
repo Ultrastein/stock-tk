@@ -160,6 +160,9 @@ export default class HistorialView {
   }
 
   async _load(mainContent) {
+    const countEl = mainContent.querySelector('#hist-count');
+    if (countEl) countEl.textContent = 'Cargando…';
+
     try {
       const params = {
         limit:  this._limit,
@@ -174,7 +177,6 @@ export default class HistorialView {
 
       this._dt.setData(data);
 
-      const countEl = mainContent.querySelector('#hist-count');
       if (countEl) {
         if (data.length === 0) {
           countEl.textContent = 'Sin registros';
@@ -190,7 +192,14 @@ export default class HistorialView {
       if (prevBtn) prevBtn.disabled = this._offset === 0;
       if (nextBtn) nextBtn.disabled = this._offset + data.length >= this._total;
 
-    } catch (e) { Toast.show('Error al cargar historial', 'error'); }
+    } catch (e) {
+      console.error('[Historial] Error al cargar:', e);
+      if (countEl) {
+        countEl.innerHTML = `No se pudo cargar &mdash; <button class="btn btn-sm btn-ghost" id="btn-retry" style="padding:2px 8px">Reintentar</button>`;
+        mainContent.querySelector('#btn-retry')?.addEventListener('click', () => this._load(mainContent));
+      }
+      Toast.show('Error al cargar historial', 'error');
+    }
   }
 
   destroy() {
