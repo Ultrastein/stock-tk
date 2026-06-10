@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Firebase credentials privadas (usar firebase-config.local.js para sobreescribir localmente)
+# frontend/public/src/js/firebase-config.js  ← descomentado: la API key de Firebase es un identificador público
+
+# Build
+dist/
+build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Coverage
+coverage/
+
+# Temp
+tmp/
+temp/

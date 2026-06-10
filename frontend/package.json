@@ -1,0 +1,12 @@
+{
+  "name": "control-stock-frontend",
+  "version": "1.0.0",
+  "description": "PWA Frontend para Control de Stock",
+  "scripts": {
+    "dev": "npx http-server public -p 5173 -c-1",
+    "build": "echo 'Static PWA - no build needed'"
+  },
+  "dependencies": {
+    "firebase": "^12.14.0"
+  }
+}

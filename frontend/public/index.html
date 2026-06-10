@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#07101f">
+  <meta name="description" content="TK+ Stock — Control de inventario y activos by Tecno Kids">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>TK+ Stock</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192x192.png">
+
+  <!-- CSS del sistema de diseño -->
+  <link rel="stylesheet" href="src/css/variables.css">
+  <link rel="stylesheet" href="src/css/base.css">
+  <link rel="stylesheet" href="src/css/components.css">
+  <link rel="stylesheet" href="src/css/layouts.css">
+  <link rel="stylesheet" href="src/css/kiosk.css">
+  <link rel="stylesheet" href="src/css/animations.css">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- html5-qrcode (escáner QR) — MUST load before app.js -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <!-- Firebase SDK (compat, módulos globales) — carga antes de firebase-config.js -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <!-- Configuración Firebase — editá este archivo con tus credenciales -->
+  <script src="src/js/firebase-config.js"></script>
+
+  <!-- Configuración de la API (overrideable por entorno) -->
+  <script>
+    window.API_BASE_URL = 'http://localhost:3000/api';
+  </script>
+</head>
+<body>
+  <!-- ── Shader background canvas (WebGL, sits behind all UI) ── -->
+  <canvas id="shader-bg" aria-hidden="true"></canvas>
+
+  <!-- Barra offline -->
+  <div id="offline-bar">📡 Sin conexión — los cambios se guardan y sincronizarán cuando haya red</div>
+
+  <!-- Contenedor principal de la SPA -->
+  <div id="app">
+    <!-- El router inserta aquí la vista activa -->
+  </div>
+
+  <!-- Shader background (plain script — must run before app.js) -->
+  <script src="src/js/shader-bg.js"></script>
+
+  <!-- Entry point de la app -->
+  <script type="module" src="src/js/app.js"></script>
+</body>
+</html>

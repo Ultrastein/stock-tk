@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shader Wallpapers — OS Futurista</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Lora:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --anthropic-dark:#141413; --anthropic-light:#faf9f5;
+  --anthropic-mid-gray:#b0aea5; --anthropic-light-gray:#e8e6dc;
+  --anthropic-orange:#d97757; --anthropic-blue:#6a9bcc; --anthropic-green:#788c5d;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Poppins',sans-serif;background:linear-gradient(135deg,var(--anthropic-light) 0%,#f5f3ee 100%);min-height:100vh;color:var(--anthropic-dark);}
+.container{display:flex;min-height:100vh;padding:20px;gap:20px;}
+.sidebar{width:290px;flex-shrink:0;background:rgba(255,255,255,0.95);backdrop-filter:blur(10px);padding:24px;border-radius:12px;box-shadow:0 10px 30px rgba(20,20,19,.1);overflow-y:auto;}
+.sidebar h1{font-family:'Lora',serif;font-size:22px;font-weight:500;color:var(--anthropic-dark);margin-bottom:6px;}
+.subtitle{color:var(--anthropic-mid-gray);font-size:13px;margin-bottom:28px;line-height:1.4;}
+.control-section{margin-bottom:28px;}
+.control-section h3{font-size:14px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.control-section h3::before{content:'•';color:var(--anthropic-orange);font-weight:bold;}
+.tab-btn{display:block;width:100%;background:var(--anthropic-light);border:1px solid var(--anthropic-light-gray);padding:9px 14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;text-align:left;transition:all .2s;color:var(--anthropic-dark);margin-bottom:6px;}
+.tab-btn:hover{background:#f0ede5;}
+.tab-btn.active{background:var(--anthropic-orange);color:#fff;border-color:var(--anthropic-orange);}
+.shader-desc{font-size:12px;color:var(--anthropic-mid-gray);line-height:1.55;margin-bottom:0;padding:10px 12px;background:var(--anthropic-light);border-radius:6px;border-left:3px solid var(--anthropic-orange);}
+.control-group{margin-bottom:16px;}
+.control-group label{display:block;font-size:13px;font-weight:500;margin-bottom:6px;}
+.slider-container{display:flex;align-items:center;gap:10px;}
+.slider-container input[type=range]{flex:1;height:4px;background:var(--anthropic-light-gray);border-radius:2px;outline:none;-webkit-appearance:none;}
+.slider-container input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;background:var(--anthropic-orange);border-radius:50%;cursor:pointer;transition:transform .15s;}
+.slider-container input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2);}
+.slider-container input[type=range]::-moz-range-thumb{width:14px;height:14px;background:var(--anthropic-orange);border-radius:50%;border:none;cursor:pointer;}
+.value-display{font-family:'Courier New',monospace;font-size:11px;color:var(--anthropic-mid-gray);min-width:38px;text-align:right;}
+.button{background:var(--anthropic-orange);color:#fff;border:none;padding:9px 14px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;width:100%;}
+.button:hover{background:#c86641;transform:translateY(-1px);}
+.button.secondary{background:var(--anthropic-blue);}
+.button.secondary:hover{background:#5a8bb8;}
+.button.tertiary{background:var(--anthropic-green);}
+.button.tertiary:hover{background:#6b7b52;}
+.button-row{display:flex;gap:8px;}
+.button-row .button{flex:1;}
+.canvas-area{flex:1;display:flex;align-items:center;justify-content:center;min-width:0;}
+#canvas-wrap{width:100%;max-width:960px;border-radius:12px;overflow:hidden;box-shadow:0 20px 40px rgba(20,20,19,.18);cursor:crosshair;}
+canvas{display:block;width:100%!important;height:auto!important;}
+.hint{font-size:11px;color:var(--anthropic-mid-gray);text-align:center;margin-top:8px;}
+@media(max-width:640px){.container{flex-direction:column;}.sidebar{width:100%;}}
+</style>
+</head>
+<body>
+<div class="container">
+<!-- ── Sidebar ── -->
+<div class="sidebar">
+  <h1>Shader OS</h1>
+  <div class="subtitle">5 fondos interactivos con WebGL.<br>Mové el mouse • hacé click para interactuar.</div>
+
+  <div class="control-section">
+    <h3>Wallpapers</h3>
+    <button class="tab-btn active" onclick="selectShader(0)">① Plasma Void</button>
+    <button class="tab-btn"        onclick="selectShader(1)">② Neural Lattice</button>
+    <button class="tab-btn"        onclick="selectShader(2)">③ Liquid Chrome</button>
+    <button class="tab-btn"        onclick="selectShader(3)">④ Aurora Drift</button>
+    <button class="tab-btn"        onclick="selectShader(4)">⑤ Data Storm</button>
+    <div class="shader-desc" id="shaderDesc" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="control-section">
+    <h3>Parameters</h3>
+    <div id="paramsContainer"></div>
+  </div>
+
+  <div class="control-section">
+    <h3>Actions</h3>
+    <div class="button-row">
+      <button class="button secondary" onclick="clearClicks()">Limpiar clicks</button>
+      <button class="button" onclick="resetParams()">Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Canvas ── -->
+<div class="canvas-area">
+  <div>
+    <div id="canvas-wrap">
+      <canvas id="glc" width="1200" height="750"></canvas>
+    </div>
+    <div class="hint">Mouse → interacción continua &nbsp;|&nbsp; Click → efecto de impacto</div>
+  </div>
+</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// VERTEX SHADER — shared by all programs
+// ═══════════════════════════════════════════════════════════════════
+const VERT = `
+attribute vec2 a_pos;
+void main(){gl_Position=vec4(a_pos,0.0,1.0);}
+`;
+
+// ═══════════════════════════════════════════════════════════════════
+// SHADER 1 — PLASMA VOID
+// Double domain-warped FBM. Mouse warps the plasma field.
+// Clicks generate expanding shockwave ripples.
+// ═══════════════════════════════════════════════════════════════════
+const FRAG_PLASMA = `
+precision highp float;
+uniform vec2  u_res,u_mouse;
+uniform float u_time,u_speed,u_warp,u_brightness;
+uniform vec2  u_clicks[6];
+uniform float u_ctimes[6];
+uniform int   u_nclicks;
+
+vec2 h2(vec2 p){p=vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3)));return -1.0+2.0*fract(sin(p)*43758.5453);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p),u=f*f*(3.0-2.0*f);return mix(mix(dot(h2(i),f),dot(h2(i+vec2(1,0)),f-vec2(1,0)),u.x),mix(dot(h2(i+vec2(0,1)),f-vec2(0,1)),dot(h2(i+vec2(1,1)),f-vec2(1,1)),u.x),u.y);}
+float fbm(vec2 p){float v=0.0,a=0.5;for(int i=0;i<6;i++){v+=a*n(p);p=p*2.1+vec2(1.7,9.2);a*=0.5;}return v;}
+
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res;
+  vec2 m=u_mouse/u_res;
+  float t=u_time*u_speed;
+  // Mouse domain warp
+  vec2 d=uv-m; float md=length(d);
+  vec2 warp=normalize(d+0.001)*u_warp*0.35*exp(-md*2.8);
+  vec2 p=uv*2.8+vec2(t*0.07)-warp;
+  vec2 q=vec2(fbm(p+t*0.05),fbm(p+vec2(5.2,1.3)+t*0.04));
+  vec2 r=vec2(fbm(p+q+vec2(1.7,9.2)+t*0.03),fbm(p+q+vec2(8.3,2.8)+t*0.03));
+  float f=fbm(p+r);
+  // Click ripples
+  for(int i=0;i<6;i++){
+    if(i>=u_nclicks)break;
+    float age=u_time-u_ctimes[i];
+    float dd=length(uv-u_clicks[i]/u_res);
+    f+=sin((dd-age*0.45)*28.0)*exp(-age*1.8)*exp(-dd*9.0)*0.28;
+  }
+  f=f*0.5+0.5;
+  // Color ramp: dark navy → indigo → cyan → near-white
+  vec3 c1=vec3(0.055,0.082,0.165);
+  vec3 c2=vec3(0.388,0.400,0.945);
+  vec3 c3=vec3(0.055,0.647,0.914);
+  vec3 c4=vec3(0.75,0.88,1.0);
+  vec3 col=mix(c1,c2,smoothstep(0.0,0.42,f));
+  col=mix(col,c3,smoothstep(0.42,0.72,f));
+  col=mix(col,c4,smoothstep(0.72,1.0,f));
+  col=pow(col*u_brightness,vec3(0.95));
+  gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
+}
+`;
+
+// ═══════════════════════════════════════════════════════════════════
+// SHADER 2 — NEURAL LATTICE
+// Hexagonal grid with animated node glow. Mouse creates a continuous
+// pulse wave. Clicks dispatch signal bursts along the lattice.
+// ═══════════════════════════════════════════════════════════════════
+const FRAG_NEURAL = `
+precision highp float;
+uniform vec2  u_res,u_mouse;
+uniform float u_time,u_speed,u_density,u_glow;
+uniform vec2  u_clicks[6];
+uniform float u_ctimes[6];
+uniform int   u_nclicks;
+
+float h1(float n){return fract(sin(n)*43758.5453);}
+float h2(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+
+// Hex grid — returns offset from nearest hex center
+vec2 hexOffset(vec2 p){
+  vec2 a=mod(p,vec2(1.0,1.732))-vec2(0.5,0.866);
+  vec2 b=mod(p-vec2(0.5,0.866),vec2(1.0,1.732))-vec2(0.5,0.866);
+  return dot(a,a)<dot(b,b)?a:b;
+}
+
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res;
+  // Aspect-correct coords [-ar..ar] x [-1..1]
+  vec2 p=(uv*2.0-1.0)*vec2(u_res.x/u_res.y,1.0);
+  vec2 m=(u_mouse/u_res*2.0-1.0)*vec2(u_res.x/u_res.y,1.0);
+  float t=u_time*u_speed;
+
+  float sc=u_density*4.5;
+  vec2 gp=p*sc;
+  vec2 hoff=hexOffset(gp);
+  float hd=max(abs(hoff.x),abs(hoff.x*0.5+hoff.y*0.866)); // hex metric
+
+  // Per-cell random phase
+  vec2 cellId=(gp-hoff);
+  float ph=h2(floor(cellId));
+
+  // Mouse proximity pulse
+  float mdist=length(p-m);
+  float mpulse=sin(t*2.5-mdist*7.0)*0.5+0.5;
+
+  // Hex edges
+  float edge=1.0-smoothstep(0.42,0.5,hd);
+  float body=1.0-smoothstep(0.0,0.42,hd);
+
+  // Node dot at center
+  float node=exp(-dot(hoff,hoff)*60.0);
+
+  // Animated brightness per cell
+  float cellAnim=0.4+0.6*(sin(t*1.8+ph*6.28)*0.5+0.5);
+
+  // Click waves
+  float wave=0.0;
+  for(int i=0;i<6;i++){
+    if(i>=u_nclicks)break;
+    float age=u_time-u_ctimes[i];
+    vec2 cp=(u_clicks[i]/u_res*2.0-1.0)*vec2(u_res.x/u_res.y,1.0);
+    float dd=length(p-cp);
+    float ring=sin((dd-age*1.5)*18.0)*exp(-age*2.2)*exp(-dd*2.5);
+    wave+=ring*0.5+0.5;
+  }
+  wave=clamp(wave,0.0,1.0);
+
+  vec3 bg=vec3(0.03,0.05,0.10);
+  vec3 edgeC=mix(vec3(0.388,0.400,0.945),vec3(0.055,0.647,0.914),mpulse);
+  vec3 nodeC=vec3(0.80,0.92,1.0);
+
+  vec3 col=bg;
+  col+=edgeC*edge*u_glow*cellAnim;
+  col+=nodeC*node*u_glow*1.1;
+  col+=edgeC*wave*0.45;
+  // Mouse halo
+  col+=edgeC*exp(-mdist*6.0)*0.25;
+  col=1.0-exp(-col*2.0);
+  gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
+}
+`;
+
+// ═══════════════════════════════════════════════════════════════════
+// SHADER 3 — LIQUID CHROME
+// Metallic sine-wave interference pattern. Mouse creates circular
+// ripples. Clicks launch expanding splash rings.
+// ═══════════════════════════════════════════════════════════════════
+const FRAG_LIQUID = `
+precision highp float;
+uniform vec2  u_res,u_mouse;
+uniform float u_time,u_speed,u_freq,u_distort;
+uniform vec2  u_clicks[6];
+uniform float u_ctimes[6];
+uniform int   u_nclicks;
+
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res;
+  vec2 m=u_mouse/u_res;
+  float t=u_time*u_speed;
+
+  // Continuous mouse ripple
+  float md=length(uv-m);
+  float mwave=sin(md*u_freq*14.0-t*3.5)*exp(-md*3.0)*u_distort*0.06;
+
+  // Click splashes — ring front
+  float splash=0.0;
+  for(int i=0;i<6;i++){
+    if(i>=u_nclicks)break;
+    float age=u_time-u_ctimes[i];
+    float dd=length(uv-u_clicks[i]/u_res);
+    float ring=exp(-pow(dd-age*0.38,2.0)*90.0)*exp(-age*1.4);
+    splash+=ring;
+  }
+
+  // Interference coordinates
+  float dx=uv.x+mwave+splash*0.04;
+  float dy=uv.y+mwave*0.8+splash*0.03;
+  float dr=length(uv-vec2(0.5))+mwave*0.6;
+
+  float w1=sin(dx*u_freq+t)*0.5+0.5;
+  float w2=sin(dy*u_freq*1.37+t*1.12+2.09)*0.5+0.5;
+  float w3=sin(dr*u_freq*0.85-t*0.65)*0.5+0.5;
+
+  float m1=w1*w2;
+  float m2=w2*w3;
+  float spec=pow(m1*m2,4.0)*2.0;
+
+  vec3 dark  =vec3(0.04,0.05,0.12);
+  vec3 indigo=vec3(0.388,0.400,0.945);
+  vec3 cyan  =vec3(0.055,0.647,0.914);
+  vec3 silver=vec3(0.72,0.78,0.94);
+
+  vec3 col=mix(dark,indigo,m1);
+  col=mix(col,cyan,m2*0.65);
+  col=mix(col,silver,spec);
+  col+=vec3(0.08,0.14,0.30)*splash*1.8;
+  col=1.0-exp(-col*1.9);
+  gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
+}
+`;
+
+// ═══════════════════════════════════════════════════════════════════
+// SHADER 4 — AURORA DRIFT
+// FBM-warped horizontal aurora bands. Mouse Y-position shifts the
+// horizon. Clicks burst light columns upward.
+// ═══════════════════════════════════════════════════════════════════
+const FRAG_AURORA = `
+precision highp float;
+uniform vec2  u_res,u_mouse;
+uniform float u_time,u_speed,u_bands,u_intensity;
+uniform vec2  u_clicks[6];
+uniform float u_ctimes[6];
+uniform int   u_nclicks;
+
+float h(float n){return fract(sin(n)*43758.5453);}
+float h2(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float sn(vec2 p){vec2 i=floor(p),f=fract(p),u=f*f*(3.0-2.0*f);float a=h2(i),b=h2(i+vec2(1,0)),c=h2(i+vec2(0,1)),d=h2(i+vec2(1,1));return mix(mix(a,b,u.x),mix(c,d,u.x),u.y);}
+float fbm2(vec2 p){float v=0.0,a=0.5;for(int i=0;i<4;i++){v+=a*sn(p);p=p*2.0+vec2(3.1,1.7);a*=0.5;}return v;}
+
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res;
+  vec2 m=u_mouse/u_res;
+  float t=u_time*u_speed;
+
+  // Mouse Y shifts bands
+  float shift=(m.y-0.5)*0.45;
+  float nx=fbm2(vec2(uv.x*1.8+t*0.25,t*0.08));
+  float band=uv.y-0.5+shift+nx*0.28;
+
+  float aurora=0.0;
+  float nb=max(1.0,u_bands);
+  for(float i=0.0;i<8.0;i++){
+    if(i>=nb)break;
+    float y=(i/nb)*0.7-0.35;
+    float bw=0.035+0.018*sn(vec2(i*3.7+0.5,t*0.15));
+    float b=exp(-pow((band-y),2.0)/(bw*bw));
+    aurora+=b*(0.55+0.45*sin(t*1.6+i*1.4+uv.x*2.8));
+  }
+
+  // Click light columns
+  for(int i=0;i<6;i++){
+    if(i>=u_nclicks)break;
+    float age=u_time-u_ctimes[i];
+    vec2 cp=u_clicks[i]/u_res;
+    float dx=abs(uv.x-cp.x);
+    float dy=uv.y-cp.y;
+    float col2=exp(-dx*dx*60.0)*exp(-max(0.0,-dy)*4.0)*exp(-age*1.8)*3.5;
+    aurora+=col2;
+  }
+
+  // Mouse horizontal glow
+  aurora+=exp(-pow(uv.x-m.x,2.0)*18.0)*exp(-pow(uv.y-m.y,2.0)*6.0)*1.8;
+
+  float a=aurora*u_intensity;
+  vec3 bg     =vec3(0.02,0.04,0.08);
+  vec3 violet =vec3(0.388,0.400,0.945);
+  vec3 teal   =vec3(0.04,0.72,0.60);
+  vec3 cyan   =vec3(0.055,0.647,0.914);
+  vec3 white  =vec3(0.80,0.92,1.0);
+
+  vec3 col=bg;
+  col+=violet*smoothstep(0.0,0.8,a)*0.75;
+  col+=teal  *smoothstep(0.5,1.8,a)*0.85;
+  col+=cyan  *smoothstep(1.2,2.5,a)*0.60;
+  col+=white *smoothstep(2.2,3.5,a)*0.45;
+  col=1.0-exp(-col*2.0);
+  gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
+}
+`;
+
+// ═══════════════════════════════════════════════════════════════════
+// SHADER 5 — DATA STORM
+// Scrolling vertical data-stream columns. Mouse creates a repulsion
+// deflection field. Clicks emit radial EMP shockwaves.
+// ═══════════════════════════════════════════════════════════════════
+const FRAG_DATA = `
+precision highp float;
+uniform vec2  u_res,u_mouse;
+uniform float u_time,u_speed,u_density,u_deflect;
+uniform vec2  u_clicks[6];
+uniform float u_ctimes[6];
+uniform int   u_nclicks;
+
+float h1(float n){return fract(sin(n)*43758.5453);}
+float h2(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+
+void main(){
+  vec2 uv=gl_FragCoord.xy/u_res;
+  vec2 m=u_mouse/u_res;
+  float t=u_time*u_speed;
+
+  // Mouse deflection (repulsion)
+  vec2 toM=uv-m; float mDist=length(toM);
+  vec2 def=normalize(toM+0.001)*u_deflect*0.12*exp(-mDist*4.5);
+
+  // EMP rings from clicks
+  vec2 emp=vec2(0.0);
+  for(int i=0;i<6;i++){
+    if(i>=u_nclicks)break;
+    float age=u_time-u_ctimes[i];
+    vec2 cp=u_clicks[i]/u_res;
+    vec2 d2=uv-cp; float dd=length(d2);
+    float ring=exp(-pow(dd-age*0.32,2.0)*55.0)*exp(-age*1.6);
+    emp+=normalize(d2+0.001)*ring*0.07;
+  }
+
+  vec2 uvd=uv+def+emp;
+
+  // Column bands
+  float colN=floor(uvd.x*u_density*38.0);
+  float colH  =h1(colN);
+  float colSpd=0.4+0.6*h1(colN+77.0);
+  float colBr =0.25+0.75*h1(colN+153.0);
+
+  // Scrolling segments
+  float scroll=fract(uvd.y+t*colSpd+colH*6.28);
+  float segIdx=floor(scroll*22.0);
+  float segPh =h2(vec2(colN,segIdx));
+  float lit   =step(0.55,segPh); // ~45 % lit
+
+  float glow  =fract(scroll*22.0);
+  glow=smoothstep(0.0,0.12,glow)*smoothstep(1.0,0.55,glow)*lit*colBr;
+
+  // Bright head of each lit segment
+  float head=exp(-fract(scroll*22.0)*fract(scroll*22.0)*6.0)*lit*colBr;
+
+  // Mouse column highlight
+  float mHL=exp(-pow(uv.x-m.x,2.0)*120.0)*0.55;
+
+  vec3 bg    =vec3(0.02,0.04,0.08);
+  vec3 stCol =mix(vec3(0.388,0.400,0.945),vec3(0.055,0.647,0.914),h1(colN+210.0));
+  vec3 headC =vec3(0.82,0.95,1.0);
+
+  vec3 col=bg;
+  col+=stCol*glow*0.9;
+  col+=headC*head*1.6;
+  col+=stCol*mHL*0.4;
+  // EMP flash overlay
+  for(int i=0;i<6;i++){
+    if(i>=u_nclicks)break;
+    float age=u_time-u_ctimes[i];
+    float dd=length(uv-u_clicks[i]/u_res);
+    col+=headC*exp(-dd*12.0)*exp(-age*3.0)*1.2;
+  }
+  col=1.0-exp(-col*2.1);
+  gl_FragColor=vec4(clamp(col,0.0,1.0),1.0);
+}
+`;
+
+// ═══════════════════════════════════════════════════════════════════
+// SHADER METADATA
+// ═══════════════════════════════════════════════════════════════════
+const SHADERS = [
+  {
+    name:"Plasma Void",
+    frag:FRAG_PLASMA,
+    desc:"FBM doblemente deformado. El mouse tuerce el campo de plasma. Los clics lanzan ondas de choque expansivas.",
+    params:[
+      {id:"u_speed",     label:"Velocidad",    min:0.1,max:2.0,step:0.05,def:0.60},
+      {id:"u_warp",      label:"Deformación",  min:0.0,max:2.5,step:0.05,def:1.00},
+      {id:"u_brightness",label:"Brillo",       min:0.3,max:1.5,step:0.05,def:0.92},
+    ]
+  },
+  {
+    name:"Neural Lattice",
+    frag:FRAG_NEURAL,
+    desc:"Grilla hexagonal con nodos pulsantes. El mouse genera ondas continuas. Los clics propagan señales por la red.",
+    params:[
+      {id:"u_speed",  label:"Velocidad",  min:0.1,max:2.0,step:0.05,def:0.70},
+      {id:"u_density",label:"Densidad",   min:0.5,max:3.0,step:0.05,def:1.20},
+      {id:"u_glow",   label:"Resplandor", min:0.3,max:3.0,step:0.05,def:1.50},
+    ]
+  },
+  {
+    name:"Liquid Chrome",
+    frag:FRAG_LIQUID,
+    desc:"Interferencia de ondas sinusoidales metálicas. El mouse crea ondas circulares. Los clics generan anillos de splash.",
+    params:[
+      {id:"u_speed",  label:"Velocidad",  min:0.1,max:2.0,step:0.05,def:0.50},
+      {id:"u_freq",   label:"Frecuencia", min:1.0,max:9.0,step:0.25,def:3.00},
+      {id:"u_distort",label:"Distorsión", min:0.0,max:2.5,step:0.05,def:0.85},
+    ]
+  },
+  {
+    name:"Aurora Drift",
+    frag:FRAG_AURORA,
+    desc:"Bandas de aurora generadas con FBM. El mouse desplaza el horizonte. Los clics disparan columnas de luz.",
+    params:[
+      {id:"u_speed",    label:"Velocidad",  min:0.1,max:2.0,step:0.05,def:0.40},
+      {id:"u_bands",    label:"Bandas",     min:1.0,max:8.0,step:1.00,def:5.00},
+      {id:"u_intensity",label:"Intensidad", min:0.3,max:3.0,step:0.05,def:1.20},
+    ]
+  },
+  {
+    name:"Data Storm",
+    frag:FRAG_DATA,
+    desc:"Lluvia vertical de streams de datos. El mouse desvía las columnas. Los clics generan pulsos EMP radiales.",
+    params:[
+      {id:"u_speed",  label:"Velocidad", min:0.1,max:3.0,step:0.05,def:1.00},
+      {id:"u_density",label:"Densidad",  min:0.3,max:3.0,step:0.05,def:1.00},
+      {id:"u_deflect",label:"Desvío",    min:0.0,max:3.0,step:0.05,def:1.50},
+    ]
+  }
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// WEBGL ENGINE
+// ═══════════════════════════════════════════════════════════════════
+let gl, canvas;
+let programs = []; // compiled WebGL programs
+let ulCache  = []; // uniform location caches
+let quadBuf;
+const MAX_CLICKS = 6;
+let currentIdx = 0;
+let startTime  = Date.now();
+let mouseX = 600, mouseY = 375; // default center
+let clicks = []; // {x, y, time}
+let paramValues = {}; // global param state (keyed by id)
+let animId;
+
+// ── Compile helper ──────────────────────────────────────────────────
+function compileShader(type, src) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src); gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    console.error('Shader compile error:', gl.getShaderInfoLog(s), '\nSource:', src);
+    return null;
+  }
+  return s;
+}
+function linkProgram(vs, fs) {
+  const p = gl.createProgram();
+  gl.attachShader(p, vs); gl.attachShader(p, fs);
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+    console.error('Link error:', gl.getProgramInfoLog(p)); return null;
+  }
+  return p;
+}
+// Cache all uniforms for a program given a list of names
+function buildCache(prog, names) {
+  const c = {};
+  names.forEach(n => { c[n] = gl.getUniformLocation(prog, n); });
+  return c;
+}
+
+// ── Init ────────────────────────────────────────────────────────────
+function initWebGL() {
+  canvas = document.getElementById('glc');
+  gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  if (!gl) { alert('WebGL no soportado en este navegador.'); return; }
+
+  // Full-screen triangle strip quad
+  quadBuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+
+  const commonUniforms = ['u_res','u_mouse','u_time','u_clicks[0]','u_ctimes[0]','u_nclicks'];
+
+  // Compile all shader programs
+  const vs = compileShader(gl.VERTEX_SHADER, VERT);
+  SHADERS.forEach((s, i) => {
+    const fs = compileShader(gl.FRAGMENT_SHADER, s.frag);
+    const prog = linkProgram(vs, fs);
+    programs[i] = prog;
+    if (prog) {
+      const paramNames = s.params.map(p => p.id);
+      ulCache[i] = buildCache(prog, [...commonUniforms, ...paramNames, 'a_pos']);
+    }
+  });
+
+  // Default param values
+  SHADERS.forEach(s => {
+    s.params.forEach(p => {
+      if (paramValues[p.id] === undefined) paramValues[p.id] = p.def;
+    });
+  });
+
+  // ── Event listeners ──
+  canvas.addEventListener('mousemove', e => {
+    const r = canvas.getBoundingClientRect();
+    const sx = canvas.width  / r.width;
+    const sy = canvas.height / r.height;
+    mouseX = (e.clientX - r.left) * sx;
+    mouseY = canvas.height - (e.clientY - r.top) * sy;
+  });
+
+  canvas.addEventListener('click', e => {
+    const r  = canvas.getBoundingClientRect();
+    const sx = canvas.width  / r.width;
+    const sy = canvas.height / r.height;
+    const t  = (Date.now() - startTime) / 1000;
+    clicks.push({ x:(e.clientX-r.left)*sx, y:canvas.height-(e.clientY-r.top)*sy, time:t });
+    if (clicks.length > MAX_CLICKS) clicks.shift();
+  });
+
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const r  = canvas.getBoundingClientRect();
+    const sx = canvas.width  / r.width;
+    const sy = canvas.height / r.height;
+    mouseX = (e.touches[0].clientX - r.left) * sx;
+    mouseY = canvas.height - (e.touches[0].clientY - r.top) * sy;
+  }, {passive:false});
+
+  canvas.addEventListener('touchend', e => {
+    const r  = canvas.getBoundingClientRect();
+    const sx = canvas.width  / r.width;
+    const sy = canvas.height / r.height;
+    const tc = e.changedTouches[0];
+    if (!tc) return;
+    clicks.push({ x:(tc.clientX-r.left)*sx, y:canvas.height-(tc.clientY-r.top)*sy, time:(Date.now()-startTime)/1000 });
+    if (clicks.length > MAX_CLICKS) clicks.shift();
+  });
+
+  render();
+}
+
+// ── Render loop ─────────────────────────────────────────────────────
+function render() {
+  animId = requestAnimationFrame(render);
+  const prog = programs[currentIdx];
+  if (!prog) return;
+
+  gl.viewport(0, 0, canvas.width, canvas.height);
+  gl.useProgram(prog);
+
+  // Bind quad
+  gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
+  const aPos = gl.getAttribLocation(prog, 'a_pos');
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+  const uc = ulCache[currentIdx];
+  const t  = (Date.now() - startTime) / 1000;
+
+  // Common uniforms
+  gl.uniform2f(uc['u_res'],   canvas.width, canvas.height);
+  gl.uniform2f(uc['u_mouse'], mouseX, mouseY);
+  gl.uniform1f(uc['u_time'],  t);
+
+  // Per-shader params
+  SHADERS[currentIdx].params.forEach(p => {
+    const loc = uc[p.id];
+    if (loc !== null && loc !== undefined)
+      gl.uniform1f(loc, paramValues[p.id] !== undefined ? paramValues[p.id] : p.def);
+  });
+
+  // Clicks (padded to MAX_CLICKS)
+  const cx = new Float32Array(MAX_CLICKS * 2);
+  const ct = new Float32Array(MAX_CLICKS);
+  clicks.forEach((c, i) => { cx[i*2]=c.x; cx[i*2+1]=c.y; ct[i]=c.time; });
+  const cLoc  = uc['u_clicks[0]'];
+  const ctLoc = uc['u_ctimes[0]'];
+  if (cLoc  !== null && cLoc  !== undefined) gl.uniform2fv(cLoc,  cx);
+  if (ctLoc !== null && ctLoc !== undefined) gl.uniform1fv(ctLoc, ct);
+  gl.uniform1i(uc['u_nclicks'], clicks.length);
+
+  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+
+// ── UI ───────────────────────────────────────────────────────────────
+function selectShader(i) {
+  currentIdx = i;
+  document.querySelectorAll('.tab-btn').forEach((b, j) => b.classList.toggle('active', i === j));
+  document.getElementById('shaderDesc').textContent = SHADERS[i].desc;
+  buildParams(i);
+}
+
+function buildParams(i) {
+  const wrap = document.getElementById('paramsContainer');
+  wrap.innerHTML = SHADERS[i].params.map(p => {
+    const v = paramValues[p.id] !== undefined ? paramValues[p.id] : p.def;
+    return `<div class="control-group">
+      <label>${p.label}</label>
+      <div class="slider-container">
+        <input type="range" id="sl_${p.id}" min="${p.min}" max="${p.max}" step="${p.step}" value="${v}"
+          oninput="onParam('${p.id}',this.value)">
+        <span class="value-display" id="vd_${p.id}">${(+v).toFixed(2)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function onParam(id, val) {
+  paramValues[id] = parseFloat(val);
+  const el = document.getElementById('vd_' + id);
+  if (el) el.textContent = parseFloat(val).toFixed(2);
+}
+
+function clearClicks() { clicks = []; }
+
+function resetParams() {
+  SHADERS[currentIdx].params.forEach(p => {
+    paramValues[p.id] = p.def;
+    const sl = document.getElementById('sl_' + p.id);
+    const vd = document.getElementById('vd_' + p.id);
+    if (sl) sl.value = p.def;
+    if (vd) vd.textContent = p.def.toFixed(2);
+  });
+}
+
+// ── Boot ─────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  initWebGL();
+  selectShader(0);
+});
+</script>
+</body>
+</html>

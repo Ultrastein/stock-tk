@@ -1,0 +1,84 @@
+.layout-kiosk {
+  min-height: 100dvh; background: var(--kiosk-scan-bg);
+  display: flex; flex-direction: column;
+  overscroll-behavior: none; touch-action: manipulation;
+}
+.kiosk-header {
+  padding: var(--sp-4) var(--sp-6);
+  background: var(--bg-surface);
+  border-bottom: 2px solid var(--kiosk-accent);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.kiosk-header h1 { font-size: var(--text-lg); color: var(--kiosk-accent); }
+.kiosk-status {
+  font-size: var(--text-sm); color: var(--text-secondary);
+  display: flex; align-items: center; gap: var(--sp-2);
+}
+.kiosk-body { flex: 1; display: flex; flex-direction: column; }
+
+.scan-zone {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  position: relative; min-height: 320px;
+}
+.scan-overlay {
+  width: 260px; height: 260px; position: relative;
+}
+.scan-overlay-tl, .scan-overlay-tr, .scan-overlay-bl, .scan-overlay-br {
+  position: absolute; width: 40px; height: 40px;
+  border-style: solid; border-color: var(--kiosk-accent);
+}
+.scan-overlay-tl { top: 0; left: 0;   border-width: 4px 0 0 4px; }
+.scan-overlay-tr { top: 0; right: 0;  border-width: 4px 4px 0 0; }
+.scan-overlay-bl { bottom: 0; left: 0;  border-width: 0 0 4px 4px; }
+.scan-overlay-br { bottom: 0; right: 0; border-width: 0 4px 4px 0; }
+
+#kiosk-scanner video { width: 260px; height: 260px; object-fit: cover; }
+
+.kiosk-result {
+  padding: var(--sp-4) var(--sp-6);
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border);
+}
+.kiosk-result-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+.kiosk-result-title { font-size: var(--text-lg); font-weight: 700; }
+.kiosk-result-meta  { font-size: var(--text-sm); color: var(--text-secondary); }
+
+.kiosk-actions {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: var(--sp-3); padding: var(--sp-4) var(--sp-6) var(--sp-6);
+}
+.btn-kiosk {
+  padding: var(--sp-5); font-size: var(--text-lg); font-weight: 700;
+  border-radius: var(--radius-lg); border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: var(--sp-2);
+  transition: transform 100ms, opacity var(--transition);
+  min-height: 80px;
+}
+.btn-kiosk:active { transform: scale(.97); }
+.btn-kiosk svg { width: 28px; height: 28px; }
+.btn-kiosk-checkout { background: var(--kiosk-accent); color: #fff; }
+.btn-kiosk-checkin  { background: var(--success);      color: #fff; }
+.btn-kiosk-reserva  { background: var(--accent);        color: #fff; }
+.btn-kiosk-cancel   { background: var(--bg-elevated);   color: var(--text-secondary); }
+
+.kiosk-manual-input {
+  display: flex; gap: var(--sp-2);
+  padding: 0 var(--sp-6) var(--sp-4);
+}
+.kiosk-manual-input input {
+  flex: 1; font-size: var(--text-lg); padding: var(--sp-3) var(--sp-4);
+  background: var(--bg-base); border: 2px solid var(--border);
+  border-radius: var(--radius); color: var(--text-primary);
+  font-family: var(--font-mono);
+}
+.kiosk-manual-input input:focus {
+  border-color: var(--kiosk-accent);
+  outline: 2px solid var(--kiosk-accent);
+  outline-offset: 2px;
+}

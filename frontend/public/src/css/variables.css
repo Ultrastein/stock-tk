@@ -1,0 +1,77 @@
+:root {
+  /* ── Fondos — 4 niveles bien diferenciados ─────────────────── */
+  --bg-base:       #07101f;   /* página / canvas */
+  --bg-surface:    #0d1a2e;   /* sidebar, tarjetas */
+  --bg-elevated:   #162035;   /* hover, inputs */
+  --bg-overlay:    #1d2e47;   /* dropdowns, tooltips */
+
+  /* Alias para compatibilidad (settings-item, etc.) */
+  --surface-1: #0d1a2e;
+  --surface-2: #162035;
+
+  /* ── Bordes ────────────────────────────────────────────────── */
+  --border:        #1a2d48;   /* líneas sutiles */
+  --border-light:  #253d5e;   /* bordes visibles */
+  --border-strong: #3a5478;   /* énfasis */
+
+  /* ── Texto — jerarquía de 3 niveles ───────────────────────── */
+  --text-primary:   #e8f1ff;  /* títulos, texto principal */
+  --text-secondary: #7fa0c4;  /* cuerpo, etiquetas */
+  --text-muted:     #4a6080;  /* hints, placeholders */
+
+  /* ── Acento primario — violeta TK+ ────────────────────────── */
+  --accent:        #7c6df8;
+  --accent-hover:  #6a5ae0;
+  --accent-light:  rgba(124, 109, 248, 0.13);
+  --accent-text:   #b5acff;   /* texto sobre fondo accent-light */
+
+  /* ── Estados semánticos ────────────────────────────────────── */
+  --success:       #2dd4a0;
+  --success-bg:    rgba(45, 212, 160, 0.1);
+  --warning:       #f7c94e;
+  --warning-bg:    rgba(247, 201, 78, 0.1);
+  --danger:        #fb7185;
+  --danger-bg:     rgba(251, 113, 133, 0.1);
+  --danger-hover:  #e11d48;
+  --info:          #38bdf8;
+  --info-bg:       rgba(56, 189, 248, 0.1);
+
+  /* ── Kiosco ────────────────────────────────────────────────── */
+  --kiosk-accent:  #0ea5e9;
+  --kiosk-scan-bg: #020617;
+
+  /* ── Tipografía ────────────────────────────────────────────── */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Escala tipográfica — legible y jerarquizada */
+  --text-xs:   11px;
+  --text-sm:   13px;
+  --text-base: 15px;   /* ↑ era 14 px */
+  --text-md:   16px;
+  --text-lg:   18px;
+  --text-xl:   22px;
+  --text-2xl:  28px;
+  --text-3xl:  36px;
+
+  /* ── Espaciado (escala 4px) ────────────────────────────────── */
+  --sp-1:  4px;  --sp-2:  8px;  --sp-3: 12px;  --sp-4: 16px;
+  --sp-5: 20px;  --sp-6: 24px;  --sp-8: 32px;  --sp-10: 40px;
+  --sp-12: 48px; --sp-16: 64px;
+
+  /* ── Radios ────────────────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius:    8px;
+  --radius-lg: 12px;
+  --radius-xl: 18px;
+
+  /* ── Sombras ───────────────────────────────────────────────── */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.5);
+  --shadow:    0 4px 16px rgba(0,0,0,.5), 0 1px 4px rgba(0,0,0,.3);
+  --shadow-lg: 0 16px 48px rgba(0,0,0,.7);
+
+  /* ── Layout ────────────────────────────────────────────────── */
+  --sidebar-w:  260px;
+  --header-h:   58px;
+  --transition: 140ms ease;
+}
