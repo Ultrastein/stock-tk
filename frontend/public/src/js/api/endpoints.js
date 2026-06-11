@@ -8,16 +8,6 @@ export const auth = {
   perfil:        ()                => api.get('/auth/perfil', { timeout: 30000 }),
 };
 
-export async function warmup() {
-  try {
-    const base = (window.API_BASE_URL || 'http://localhost:3000/api').replace('/api', '');
-    const ctrl = new AbortController();
-    const tid  = setTimeout(() => ctrl.abort(), 55000);
-    await fetch(`${base}/health`, { method: 'GET', signal: ctrl.signal });
-    clearTimeout(tid);
-  } catch (_) { /* silence — just waking Render free tier */ }
-}
-
 export const usuarios = {
   listar:      ()          => api.get('/usuarios'),
   crear:       (data)      => api.post('/usuarios', data),

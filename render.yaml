@@ -3,7 +3,7 @@ services:
     name: stock-tk-api
     runtime: node
     rootDir: backend
-    buildCommand: npm install && npx sequelize-cli db:migrate && npx sequelize-cli db:seed:all
+    buildCommand: npm install && npx sequelize-cli db:migrate
     startCommand: npm start
     plan: free
     envVars:

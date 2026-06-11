@@ -6,7 +6,15 @@
 (function checkLicense() {
   const host = location.hostname;
   const ALLOWED = ['localhost', '127.0.0.1', 'ultrastein.github.io'];
-  if (ALLOWED.some(h => host === h || host.endsWith('.' + h))) return;
+  const isPrivate =
+    ALLOWED.some(h => host === h || host.endsWith('.' + h)) ||
+    /^10\./.test(host) ||
+    /^192\.168\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
+    host.endsWith('.local') ||
+    host.endsWith('.lan') ||
+    host === '[::1]';
+  if (isPrivate) return;
 
   document.documentElement.style.cssText = 'height:100%;margin:0';
   document.body.style.cssText =
@@ -24,7 +32,7 @@
       </h1>
       <p style="color:#7fa0c4;font-size:14px;max-width:360px;line-height:1.6;margin:0 auto">
         Este software es propiedad de <strong style="color:#e8f1ff">TK+ by Tecno Kids</strong>
-        y no puede ser redistribuido ni utilizado en dominios no autorizados.<br><br>
+        y solo puede ejecutarse en redes privadas autorizadas.<br><br>
         <em style="color:#4a6080">Desarrollo: prof. Nicolas Kane</em>
       </p>
     </div>`;
@@ -37,7 +45,7 @@
 import { get, subscribe, setAuth, clearAuth, isAuthenticated, hasRole } from './store/state.js';
 import { userData }          from './store/db.js';
 import { init as initSync }  from './store/syncManager.js';
-import { auth as authApi, warmup } from './api/endpoints.js';
+import { auth as authApi } from './api/endpoints.js';
 
 // ── Rutas ────────────────────────────────────────────────────────────────────
 // public: true  → ruta accesible sin autenticar
@@ -208,9 +216,6 @@ async function bootstrap() {
   _bootstrapped = true;
   initOfflineBar();
   initSync();
-
-  // Wake Render's free-tier backend before the user hits Login
-  if (navigator.onLine) warmup();
 
   await restoreSession();
 

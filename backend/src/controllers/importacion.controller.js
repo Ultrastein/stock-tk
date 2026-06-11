@@ -195,6 +195,7 @@ async function importarActivos(req, res) {
  *   - Referencia: categorías y ubicaciones actuales del sistema
  */
 async function generarPlantilla(req, res) {
+  try {
   const [categorias, ubicaciones] = await Promise.all([
     Categoria.findAll({ order: [['nombre', 'ASC']] }),
     Ubicacion.findAll({ order: [['nombre', 'ASC']] }),
@@ -261,6 +262,10 @@ async function generarPlantilla(req, res) {
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', 'attachment; filename="plantilla-importacion.xlsx"');
   return res.send(buffer);
+  } catch (err) {
+    console.error('❌ Error generando plantilla:', err);
+    return res.status(500).json({ error: 'Error al generar la plantilla.', detalle: err.message });
+  }
 }
 
 module.exports = { importarProductos, importarActivos, generarPlantilla };

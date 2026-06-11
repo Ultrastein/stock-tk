@@ -481,7 +481,7 @@ export default class StockView {
         document.body.removeChild(a);
         URL.revokeObjectURL(a.href);
       } catch (e) {
-        Toast.show('Error al descargar la plantilla', 'error');
+        Toast.show(`Error al descargar la plantilla: ${e.message}`, 'error');
       } finally {
         btn.disabled = false;
         btn.textContent = '⬇ Descargar plantilla';
