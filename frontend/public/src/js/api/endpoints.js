@@ -1,4 +1,4 @@
-import api from './client.js';
+import api, { getBaseUrl } from './client.js';
 import { getToken } from '../store/state.js';
 import { ApiError } from './client.js';
 
@@ -175,7 +175,7 @@ export const reportes = {
 export const importacion = {
   _post: async (path, formData) => {
     const token = getToken();
-    const url   = (window.API_BASE_URL || 'http://localhost:3000/api') + path;
+    const url   = getBaseUrl() + path;
     try {
       const res  = await fetch(url, {
         method:  'POST',
@@ -194,7 +194,7 @@ export const importacion = {
   importarActivos:   (formData) => importacion._post('/importacion/activos',   formData),
   descargarPlantilla: async () => {
     const token = getToken();
-    const url   = (window.API_BASE_URL || 'http://localhost:3000/api') + '/importacion/plantilla';
+    const url   = getBaseUrl() + '/importacion/plantilla';
     try {
       const res = await fetch(url, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},

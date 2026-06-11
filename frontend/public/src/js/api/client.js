@@ -1,16 +1,13 @@
 import { getToken, clearAuth } from '../store/state.js';
 import { syncQueue } from '../store/db.js';
 
-function getBaseUrl() {
+export function getBaseUrl() {
   // Determinar URL del backend según entorno (producción GitHub Pages vs local)
-  if (typeof window !== 'undefined') {
-    const host = window.location.hostname;
-    if (host === 'ultrastein.github.io') {
-      return 'https://stock-tk-api.onrender.com/api';
-    }
-    // Desarrollo local: URL relativa para que Vite proxy reenvíe a puerto 3001
-    return '/api';
+  const host = window.location.hostname;
+  if (host === 'ultrastein.github.io') {
+    return 'https://stock-tk-api.onrender.com/api';
   }
+  // Desarrollo local: URL relativa para que Vite proxy reenvíe a puerto 3001
   return '/api';
 }
 
