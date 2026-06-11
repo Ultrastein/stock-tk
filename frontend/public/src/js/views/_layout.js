@@ -157,8 +157,8 @@ export function renderLayout(container, { usuario, activeHash }) {
   container.innerHTML = `
     <div class="layout-app">
       <aside class="sidebar" role="navigation" aria-label="Menú principal">
-        <div class="sidebar-logo">
-          <img src="icons/logo-tk.png" alt="TK+ Stock" style="height:32px;width:auto;display:block">
+        <div class="sidebar-logo" style="padding:12px 16px">
+          <img src="icons/logo-tk.png" alt="TK+ Stock" style="width:100%;height:auto;display:block">
         </div>
         <nav class="sidebar-nav">
           ${navHTML}
