@@ -9,6 +9,7 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
+router.get ('/plantilla', requiereRol(ROLES.ADMIN), ctrl.generarPlantilla);
 router.post('/productos', requiereRol(ROLES.ADMIN), upload.single('archivo'), ctrl.importarProductos);
 router.post('/activos',   requiereRol(ROLES.ADMIN), upload.single('archivo'), ctrl.importarActivos);
 

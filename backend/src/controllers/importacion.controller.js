@@ -1,9 +1,10 @@
 const db = require('../models');
-const { Producto, ActivoFijo } = db;
+const { Producto, ActivoFijo, Categoria, Ubicacion } = db;
 const { parsearCSV, parsearExcel } = require('../utils/csvParser');
 const { generarCodigo, generarCodigoQR } = require('../utils/codeGenerator');
 const { registrarMovimiento } = require('../services/historial.service');
 const { ACCION_HISTORIAL, TIPO_PRODUCTO } = require('../config/constants');
+const XLSX = require('xlsx');
 
 function parsearArchivo(file) {
   const isCsv = file.mimetype === 'text/csv' || file.originalname.endsWith('.csv');
@@ -13,7 +14,9 @@ function parsearArchivo(file) {
 /**
  * POST /api/importacion/productos
  * Columnas requeridas: nombre, tipo
- * Columnas opcionales: codigo, codigo_barras, descripcion, categoria_id, ubicacion_id,
+ * Columnas opcionales: codigo, codigo_barras, descripcion,
+ *   categoria (nombre), categoria_id (UUID),
+ *   ubicacion (nombre), ubicacion_id (UUID),
  *   stock_actual, stock_minimo, unidad_medida, precio_referencia
  */
 async function importarProductos(req, res) {
@@ -25,6 +28,14 @@ async function importarProductos(req, res) {
   } catch (e) {
     return res.status(400).json({ error: 'No se pudo parsear el archivo.', detalle: e.message });
   }
+
+  // Pre-cargar categorías y ubicaciones para resolución eficiente por nombre
+  const [todasCategorias, todasUbicaciones] = await Promise.all([
+    Categoria.findAll(),
+    Ubicacion.findAll(),
+  ]);
+  const catPorNombre  = new Map(todasCategorias.map(c => [c.nombre.toLowerCase().trim(), c.id]));
+  const ubicPorNombre = new Map(todasUbicaciones.map(u => [u.nombre.toLowerCase().trim(), u.id]));
 
   const exitosos = [];
   const errores  = [];
@@ -41,17 +52,37 @@ async function importarProductos(req, res) {
         continue;
       }
 
+      // Resolver categoría: primero por nombre, luego por UUID directo
+      let categoria_id = fila.categoria_id || null;
+      if (!categoria_id && fila.categoria) {
+        categoria_id = catPorNombre.get(String(fila.categoria).toLowerCase().trim()) || null;
+        if (!categoria_id) {
+          errores.push({ fila: i + 2, error: `Categoría no encontrada: "${fila.categoria}". Verificá la hoja Referencia de la plantilla.` });
+          continue;
+        }
+      }
+
+      // Resolver ubicación: primero por nombre, luego por UUID directo
+      let ubicacion_id = fila.ubicacion_id || null;
+      if (!ubicacion_id && fila.ubicacion) {
+        ubicacion_id = ubicPorNombre.get(String(fila.ubicacion).toLowerCase().trim()) || null;
+        if (!ubicacion_id) {
+          errores.push({ fila: i + 2, error: `Ubicación no encontrada: "${fila.ubicacion}". Verificá la hoja Referencia de la plantilla.` });
+          continue;
+        }
+      }
+
       const producto = await Producto.create({
-        codigo:           fila.codigo        || generarCodigo('PRD'),
-        codigo_barras:    fila.codigo_barras  || null,
-        nombre:           fila.nombre,
-        descripcion:      fila.descripcion   || null,
-        tipo:             fila.tipo,
-        categoria_id:     fila.categoria_id  || null,
-        ubicacion_id:     fila.ubicacion_id  || null,
-        stock_actual:     parseInt(fila.stock_actual)  || 0,
-        stock_minimo:     parseInt(fila.stock_minimo)  || 0,
-        unidad_medida:    fila.unidad_medida  || 'unidades',
+        codigo:            fila.codigo           || generarCodigo('PRD'),
+        codigo_barras:     fila.codigo_barras     || null,
+        nombre:            fila.nombre,
+        descripcion:       fila.descripcion      || null,
+        tipo:              fila.tipo,
+        categoria_id,
+        ubicacion_id,
+        stock_actual:      parseInt(fila.stock_actual)      || 0,
+        stock_minimo:      parseInt(fila.stock_minimo)      || 0,
+        unidad_medida:     fila.unidad_medida     || 'unidades',
         precio_referencia: parseFloat(fila.precio_referencia) || null,
       });
 
@@ -80,8 +111,9 @@ async function importarProductos(req, res) {
 
 /**
  * POST /api/importacion/activos
- * Columnas requeridas: producto_id, numero_serie
- * Columnas opcionales: mac_address, codigo_qr, fecha_adquisicion, valor_adquisicion, notas
+ * Columnas requeridas: numero_serie + (producto_codigo | producto_id)
+ * Columnas opcionales: mac_address, codigo_qr, fecha_adquisicion, valor_adquisicion,
+ *   fecha_garantia, vida_util_anos, notas
  */
 async function importarActivos(req, res) {
   if (!req.file) return res.status(400).json({ error: 'Se requiere un archivo.' });
@@ -93,37 +125,53 @@ async function importarActivos(req, res) {
     return res.status(400).json({ error: 'No se pudo parsear el archivo.', detalle: e.message });
   }
 
+  // Pre-cargar productos por código para resolución eficiente
+  const todosProductos = await Producto.findAll({ attributes: ['id', 'codigo'] });
+  const prodPorCodigo  = new Map(todosProductos.map(p => [p.codigo.toLowerCase().trim(), p.id]));
+
   const exitosos = [];
   const errores  = [];
 
   for (let i = 0; i < filas.length; i++) {
     const fila = filas[i];
     try {
-      if (!fila.producto_id || !fila.numero_serie) {
-        errores.push({ fila: i + 2, error: 'producto_id y numero_serie son requeridos.' });
+      // Resolver producto: primero por código, luego por UUID directo
+      let producto_id = fila.producto_id || null;
+      if (!producto_id && fila.producto_codigo) {
+        producto_id = prodPorCodigo.get(String(fila.producto_codigo).toLowerCase().trim()) || null;
+        if (!producto_id) {
+          errores.push({ fila: i + 2, error: `Producto no encontrado con código: "${fila.producto_codigo}".` });
+          continue;
+        }
+      }
+
+      if (!producto_id || !fila.numero_serie) {
+        errores.push({ fila: i + 2, error: 'producto_codigo (o producto_id) y numero_serie son requeridos.' });
         continue;
       }
 
       const activo = await ActivoFijo.create({
-        producto_id:       fila.producto_id,
+        producto_id,
         numero_serie:      fila.numero_serie,
         mac_address:       fila.mac_address       || null,
         codigo_qr:         fila.codigo_qr         || generarCodigoQR(),
         fecha_adquisicion: fila.fecha_adquisicion || null,
         valor_adquisicion: parseFloat(fila.valor_adquisicion) || null,
+        fecha_garantia:    fila.fecha_garantia    || null,
+        vida_util_anos:    parseInt(fila.vida_util_anos)      || null,
         notas:             fila.notas             || null,
       });
 
       await registrarMovimiento({
-        usuario_id:    req.user.id,
-        accion:        ACCION_HISTORIAL.CREACION,
-        entidad_tipo:  'ActivoFijo',
-        entidad_id:    activo.id,
+        usuario_id:     req.user.id,
+        accion:         ACCION_HISTORIAL.CREACION,
+        entidad_tipo:   'ActivoFijo',
+        entidad_id:     activo.id,
         activo_fijo_id: activo.id,
-        producto_id:   activo.producto_id,
-        numero_serie:  activo.numero_serie,
-        detalle:       { importacion: true, fila: i + 2 },
-        ip_address:    req.ip,
+        producto_id:    activo.producto_id,
+        numero_serie:   activo.numero_serie,
+        detalle:        { importacion: true, fila: i + 2 },
+        ip_address:     req.ip,
       });
 
       exitosos.push({ fila: i + 2, id: activo.id, numero_serie: activo.numero_serie });
@@ -139,4 +187,80 @@ async function importarActivos(req, res) {
   });
 }
 
-module.exports = { importarProductos, importarActivos };
+/**
+ * GET /api/importacion/plantilla
+ * Genera y descarga un .xlsx con tres hojas:
+ *   - Productos: columnas + 2 filas de ejemplo
+ *   - Activos Fijos: columnas + 2 filas de ejemplo
+ *   - Referencia: categorías y ubicaciones actuales del sistema
+ */
+async function generarPlantilla(req, res) {
+  const [categorias, ubicaciones] = await Promise.all([
+    Categoria.findAll({ order: [['nombre', 'ASC']] }),
+    Ubicacion.findAll({ order: [['nombre', 'ASC']] }),
+  ]);
+
+  const wb = XLSX.utils.book_new();
+
+  // ── Hoja 1: Productos ─────────────────────────────────────────────────────
+  const productosRows = [
+    ['nombre', 'tipo', 'codigo', 'codigo_barras', 'descripcion', 'categoria', 'ubicacion', 'stock_actual', 'stock_minimo', 'unidad_medida', 'precio_referencia'],
+    ['Notebook HP 15', 'retornable', 'NB-001', '', 'Notebook para uso docente', categorias[0]?.nombre || 'Electrónica', ubicaciones[0]?.nombre || 'Depósito A', 5, 2, 'unidades', 85000],
+    ['Marcador azul pizarrón', 'consumible', '', '', 'Marcador para pizarrón color azul', categorias[1]?.nombre || 'Papelería', ubicaciones[1]?.nombre || 'Depósito B', 50, 10, 'unidades', 350],
+  ];
+  const wsProductos = XLSX.utils.aoa_to_sheet(productosRows);
+  wsProductos['!cols'] = [
+    { wch: 30 }, { wch: 12 }, { wch: 12 }, { wch: 15 }, { wch: 35 },
+    { wch: 20 }, { wch: 20 }, { wch: 13 }, { wch: 13 }, { wch: 14 }, { wch: 18 },
+  ];
+  XLSX.utils.book_append_sheet(wb, wsProductos, 'Productos');
+
+  // ── Hoja 2: Activos Fijos ─────────────────────────────────────────────────
+  const activosRows = [
+    ['producto_codigo', 'numero_serie', 'mac_address', 'fecha_adquisicion', 'valor_adquisicion', 'fecha_garantia', 'vida_util_anos', 'notas'],
+    ['NB-001', 'SN12345678', 'AA:BB:CC:DD:EE:FF', '2024-01-15', 85000, '2026-01-15', 5, 'Buen estado'],
+    ['NB-001', 'SN87654321', '', '2024-01-15', 85000, '', '', ''],
+  ];
+  const wsActivos = XLSX.utils.aoa_to_sheet(activosRows);
+  wsActivos['!cols'] = [
+    { wch: 18 }, { wch: 18 }, { wch: 20 }, { wch: 18 }, { wch: 18 }, { wch: 16 }, { wch: 15 }, { wch: 25 },
+  ];
+  XLSX.utils.book_append_sheet(wb, wsActivos, 'Activos Fijos');
+
+  // ── Hoja 3: Referencia ────────────────────────────────────────────────────
+  const maxRows = Math.max(categorias.length, ubicaciones.length);
+  const refRows = [
+    ['CATEGORÍAS', '', '', 'UBICACIONES', ''],
+    ['Nombre', 'Descripción', '', 'Nombre', 'Tipo'],
+  ];
+  for (let i = 0; i < maxRows; i++) {
+    const cat  = categorias[i];
+    const ubic = ubicaciones[i];
+    refRows.push([
+      cat  ? cat.nombre              : '',
+      cat  ? (cat.descripcion || '') : '',
+      '',
+      ubic ? ubic.nombre : '',
+      ubic ? ubic.tipo   : '',
+    ]);
+  }
+  // Tipos de producto válidos
+  refRows.push([]);
+  refRows.push(['TIPOS DE PRODUCTO VÁLIDOS', '', '', 'TIPOS DE UBICACIÓN VÁLIDOS', '']);
+  refRows.push(['retornable', '', '', 'aula', '']);
+  refRows.push(['consumible', '', '', 'deposito', '']);
+  refRows.push(['', '', '', 'laboratorio', '']);
+  refRows.push(['', '', '', 'otro', '']);
+
+  const wsRef = XLSX.utils.aoa_to_sheet(refRows);
+  wsRef['!cols'] = [{ wch: 28 }, { wch: 35 }, { wch: 4 }, { wch: 28 }, { wch: 14 }];
+  XLSX.utils.book_append_sheet(wb, wsRef, 'Referencia');
+
+  const buffer = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', 'attachment; filename="plantilla-importacion.xlsx"');
+  return res.send(buffer);
+}
+
+module.exports = { importarProductos, importarActivos, generarPlantilla };

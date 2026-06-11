@@ -183,18 +183,34 @@ export const reportes = {
 };
 
 export const importacion = {
-  subir: async (formData) => {
+  _post: async (path, formData) => {
     const token = getToken();
-    const url   = (window.API_BASE_URL || 'http://localhost:3000/api') + '/importacion';
+    const url   = (window.API_BASE_URL || 'http://localhost:3000/api') + path;
     try {
-      const res = await fetch(url, {
+      const res  = await fetch(url, {
         method:  'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
-        body:    formData, // No poner Content-Type — el browser setea el boundary automáticamente
+        body:    formData,
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new ApiError(res.status, data.error || `Error ${res.status}`);
       return data;
+    } catch (e) {
+      if (e instanceof ApiError) throw e;
+      throw new ApiError(503, 'Sin conexión al servidor.');
+    }
+  },
+  importarProductos: (formData) => importacion._post('/importacion/productos', formData),
+  importarActivos:   (formData) => importacion._post('/importacion/activos',   formData),
+  descargarPlantilla: async () => {
+    const token = getToken();
+    const url   = (window.API_BASE_URL || 'http://localhost:3000/api') + '/importacion/plantilla';
+    try {
+      const res = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new ApiError(res.status, `Error ${res.status}`);
+      return res.blob();
     } catch (e) {
       if (e instanceof ApiError) throw e;
       throw new ApiError(503, 'Sin conexión al servidor.');

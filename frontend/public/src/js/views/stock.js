@@ -7,10 +7,11 @@ import { DataTable }     from '../components/DataTable.js';
 import { Modal }         from '../components/Modal.js';
 import { Toast }         from '../components/Toast.js';
 import {
-  productos   as productosApi,
-  activos     as activosApi,
-  categorias  as categoriasApi,
-  ubicaciones as ubicacionesApi,
+  productos    as productosApi,
+  activos      as activosApi,
+  categorias   as categoriasApi,
+  ubicaciones  as ubicacionesApi,
+  importacion  as importacionApi,
 } from '../api/endpoints.js';
 import { get as getState } from '../store/state.js';
 
@@ -46,7 +47,10 @@ export default class StockView {
     mainContent.innerHTML = `
       <div class="page-header">
         <h1>Stock</h1>
-        <button class="btn btn-primary" id="btn-nuevo">+ Nuevo</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-secondary" id="btn-importar">⬆ Importar Excel</button>
+          <button class="btn btn-primary" id="btn-nuevo">+ Nuevo</button>
+        </div>
       </div>
       <div class="page-body">
         <!-- Tabs -->
@@ -128,7 +132,8 @@ export default class StockView {
     mainContent.querySelector('#tab-activos').addEventListener('click', () =>
       this._switchTab('activos', mainContent));
 
-    // ── Botón nuevo ───────────────────────────────────────────────────────
+    // ── Botones de header ─────────────────────────────────────────────────
+    mainContent.querySelector('#btn-importar').addEventListener('click', () => this._openImportModal());
     mainContent.querySelector('#btn-nuevo').addEventListener('click', () => {
       if (this._tab === 'productos') this._openProductoModal(null);
       else this._openActivoModal(null);
@@ -360,6 +365,216 @@ export default class StockView {
       Toast.show('Activo eliminado', 'success');
       await this._loadActivos();
     } catch (e) { Toast.show(e.message, 'error'); }
+  }
+
+  // ── Importación Excel ────────────────────────────────────────────────────
+
+  _openImportModal() {
+    const el = document.createElement('div');
+
+    el.innerHTML = `
+      <!-- Tabs internos -->
+      <div style="display:flex;gap:8px;border-bottom:1px solid var(--border);margin-bottom:16px">
+        <button class="btn btn-ghost" id="itab-productos"
+          style="border-bottom:2px solid var(--accent);border-radius:0;padding:6px 14px">
+          📦 Productos
+        </button>
+        <button class="btn btn-ghost" id="itab-activos"
+          style="border-radius:0;padding:6px 14px">
+          🔩 Activos Fijos
+        </button>
+      </div>
+
+      <!-- Descarga de plantilla -->
+      <div style="background:var(--surface2,#1e2433);border-radius:8px;padding:12px 16px;
+                  margin-bottom:16px;display:flex;align-items:center;gap:12px">
+        <div style="flex:1">
+          <div style="font-weight:600;margin-bottom:2px">Plantilla Excel</div>
+          <div style="font-size:12px;color:var(--text-secondary,#8896b0)">
+            Descargá la plantilla con el formato correcto y una hoja de Referencia
+            con las categorías y ubicaciones disponibles en el sistema.
+          </div>
+        </div>
+        <button class="btn btn-secondary" id="btn-dl-plantilla" style="white-space:nowrap">
+          ⬇ Descargar plantilla
+        </button>
+      </div>
+
+      <!-- Panel Productos -->
+      <div id="ipanel-productos">
+        <p style="font-size:12px;color:var(--text-secondary,#8896b0);margin-bottom:10px">
+          <strong>Requeridas:</strong> nombre, tipo (consumible / retornable)<br>
+          <strong>Opcionales:</strong> codigo, descripcion, categoria, ubicacion,
+          stock_actual, stock_minimo, unidad_medida, precio_referencia
+        </p>
+        <label id="izona-productos" style="display:flex;flex-direction:column;align-items:center;
+            justify-content:center;border:2px dashed var(--border);border-radius:8px;
+            padding:24px;cursor:pointer;gap:6px;transition:border-color .15s">
+          <input type="file" id="ifile-productos" accept=".xlsx,.xls,.csv" style="display:none">
+          <span style="font-size:22px">📂</span>
+          <span id="inombre-productos" style="font-size:13px;color:var(--text-secondary,#8896b0)">
+            Seleccioná un archivo .xlsx, .xls o .csv
+          </span>
+        </label>
+      </div>
+
+      <!-- Panel Activos -->
+      <div id="ipanel-activos" style="display:none">
+        <p style="font-size:12px;color:var(--text-secondary,#8896b0);margin-bottom:10px">
+          <strong>Requeridas:</strong> producto_codigo, numero_serie<br>
+          <strong>Opcionales:</strong> mac_address, fecha_adquisicion, valor_adquisicion,
+          fecha_garantia, vida_util_anos, notas
+        </p>
+        <label id="izona-activos" style="display:flex;flex-direction:column;align-items:center;
+            justify-content:center;border:2px dashed var(--border);border-radius:8px;
+            padding:24px;cursor:pointer;gap:6px;transition:border-color .15s">
+          <input type="file" id="ifile-activos" accept=".xlsx,.xls,.csv" style="display:none">
+          <span style="font-size:22px">📂</span>
+          <span id="inombre-activos" style="font-size:13px;color:var(--text-secondary,#8896b0)">
+            Seleccioná un archivo .xlsx, .xls o .csv
+          </span>
+        </label>
+      </div>
+
+      <!-- Resultado inline -->
+      <div id="iresultado" style="display:none;margin-top:16px"></div>
+    `;
+
+    let tabActual = 'productos';
+
+    // ── Tabs ──────────────────────────────────────────────────────────────
+    const switchITab = (tab) => {
+      tabActual = tab;
+      el.querySelector('#itab-productos').style.borderBottom =
+        tab === 'productos' ? '2px solid var(--accent)' : 'none';
+      el.querySelector('#itab-activos').style.borderBottom =
+        tab === 'activos' ? '2px solid var(--accent)' : 'none';
+      el.querySelector('#ipanel-productos').style.display = tab === 'productos' ? '' : 'none';
+      el.querySelector('#ipanel-activos').style.display   = tab === 'activos'   ? '' : 'none';
+      el.querySelector('#iresultado').style.display = 'none';
+    };
+    el.querySelector('#itab-productos').addEventListener('click', () => switchITab('productos'));
+    el.querySelector('#itab-activos').addEventListener('click',   () => switchITab('activos'));
+
+    // ── File pickers ──────────────────────────────────────────────────────
+    const wireFilePicker = (inputId, labelId) => {
+      el.querySelector(inputId).addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        el.querySelector(labelId).textContent = file ? file.name : 'Seleccioná un archivo .xlsx, .xls o .csv';
+      });
+    };
+    wireFilePicker('#ifile-productos', '#inombre-productos');
+    wireFilePicker('#ifile-activos',   '#inombre-activos');
+
+    // ── Descarga plantilla ────────────────────────────────────────────────
+    el.querySelector('#btn-dl-plantilla').addEventListener('click', async () => {
+      const btn = el.querySelector('#btn-dl-plantilla');
+      btn.disabled = true;
+      btn.textContent = 'Descargando…';
+      try {
+        const blob = await importacionApi.descargarPlantilla();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'plantilla-importacion.xlsx';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+      } catch (e) {
+        Toast.show('Error al descargar la plantilla', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '⬇ Descargar plantilla';
+      }
+    });
+
+    // ── Importar ──────────────────────────────────────────────────────────
+    const renderResultado = (res) => {
+      const div = el.querySelector('#iresultado');
+      div.style.display = '';
+      const { resumen, exitosos, errores } = res;
+      let html = `
+        <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+          <span class="badge badge-green">✔ ${resumen.exitosos} importados</span>
+          ${resumen.errores > 0 ? `<span class="badge badge-red">✖ ${resumen.errores} con error</span>` : ''}
+          <span style="font-size:12px;color:var(--text-secondary,#8896b0);align-self:center">
+            Total: ${resumen.total} filas
+          </span>
+        </div>
+      `;
+      if (errores.length > 0) {
+        html += `
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--danger,#e05c5c)">
+            Filas con error:
+          </div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;font-size:12px;border-collapse:collapse">
+              <thead>
+                <tr style="border-bottom:1px solid var(--border)">
+                  <th style="text-align:left;padding:4px 8px;white-space:nowrap">Fila</th>
+                  <th style="text-align:left;padding:4px 8px">Motivo</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${errores.map(e => `
+                  <tr style="border-bottom:1px solid var(--border)">
+                    <td style="padding:4px 8px;white-space:nowrap">${e.fila}</td>
+                    <td style="padding:4px 8px;color:var(--danger,#e05c5c)">${esc(e.error)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+      div.innerHTML = html;
+    };
+
+    // ── Modal ─────────────────────────────────────────────────────────────
+    const modal = new Modal({
+      title:       'Importar desde Excel',
+      content:     el,
+      confirmText: 'Importar',
+      cancelText:  'Cerrar',
+      size:        'md',
+    });
+
+    modal.onCancel(() => modal.hide());
+    modal.onConfirm(async () => {
+      const fileInput = el.querySelector(tabActual === 'productos' ? '#ifile-productos' : '#ifile-activos');
+      if (!fileInput.files[0]) {
+        Toast.show('Seleccioná un archivo antes de importar', 'error');
+        return;
+      }
+      const formData = new FormData();
+      formData.append('archivo', fileInput.files[0]);
+
+      const btn = modal._el.querySelector('.btn-confirm');
+      btn.disabled = true;
+      btn.textContent = 'Importando…';
+
+      try {
+        const res = tabActual === 'productos'
+          ? await importacionApi.importarProductos(formData)
+          : await importacionApi.importarActivos(formData);
+        renderResultado(res);
+        if (tabActual === 'productos') await this._loadProductos();
+        else                           await this._loadActivos();
+        if (res.resumen.errores === 0) Toast.show(`${res.resumen.exitosos} registros importados`, 'success');
+      } catch (e) {
+        Toast.show(e.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Importar';
+      }
+    });
+
+    // Override para que el modal NO se cierre automáticamente al confirmar
+    modal._confirm = function () {
+      if (this._onConfirm) this._onConfirm();
+    };
+
+    modal.show();
   }
 
   destroy() {
