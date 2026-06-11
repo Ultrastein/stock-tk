@@ -37,8 +37,11 @@ async function importarProductos(req, res) {
   const catPorNombre  = new Map(todasCategorias.map(c => [c.nombre.toLowerCase().trim(), c.id]));
   const ubicPorNombre = new Map(todasUbicaciones.map(u => [u.nombre.toLowerCase().trim(), u.id]));
 
-  const exitosos = [];
-  const errores  = [];
+  const exitosos   = [];
+  const errores    = [];
+  const advertencias = [];
+  const catsCreadas  = new Set();
+  const ubicsCreadas = new Set();
 
   for (let i = 0; i < filas.length; i++) {
     const fila = filas[i];
@@ -52,23 +55,40 @@ async function importarProductos(req, res) {
         continue;
       }
 
-      // Resolver categoría: primero por nombre, luego por UUID directo
+      // Resolver categoría: buscar por nombre → auto-crear si no existe
       let categoria_id = fila.categoria_id || null;
       if (!categoria_id && fila.categoria) {
-        categoria_id = catPorNombre.get(String(fila.categoria).toLowerCase().trim()) || null;
+        const key = String(fila.categoria).toLowerCase().trim();
+        categoria_id = catPorNombre.get(key) || null;
         if (!categoria_id) {
-          errores.push({ fila: i + 2, error: `Categoría no encontrada: "${fila.categoria}". Verificá la hoja Referencia de la plantilla.` });
-          continue;
+          const [cat, creada] = await Categoria.findOrCreate({
+            where: { nombre: String(fila.categoria).trim() },
+          });
+          categoria_id = cat.id;
+          catPorNombre.set(key, cat.id);
+          if (creada && !catsCreadas.has(key)) {
+            catsCreadas.add(key);
+            advertencias.push(`Categoría "${fila.categoria}" creada automáticamente.`);
+          }
         }
       }
 
-      // Resolver ubicación: primero por nombre, luego por UUID directo
+      // Resolver ubicación: buscar por nombre → auto-crear si no existe
       let ubicacion_id = fila.ubicacion_id || null;
       if (!ubicacion_id && fila.ubicacion) {
-        ubicacion_id = ubicPorNombre.get(String(fila.ubicacion).toLowerCase().trim()) || null;
+        const key = String(fila.ubicacion).toLowerCase().trim();
+        ubicacion_id = ubicPorNombre.get(key) || null;
         if (!ubicacion_id) {
-          errores.push({ fila: i + 2, error: `Ubicación no encontrada: "${fila.ubicacion}". Verificá la hoja Referencia de la plantilla.` });
-          continue;
+          const [ubic, creada] = await Ubicacion.findOrCreate({
+            where: { nombre: String(fila.ubicacion).trim() },
+            defaults: { tipo: 'otro' },
+          });
+          ubicacion_id = ubic.id;
+          ubicPorNombre.set(key, ubic.id);
+          if (creada && !ubicsCreadas.has(key)) {
+            ubicsCreadas.add(key);
+            advertencias.push(`Ubicación "${fila.ubicacion}" creada automáticamente.`);
+          }
         }
       }
 
@@ -103,9 +123,10 @@ async function importarProductos(req, res) {
   }
 
   return res.json({
-    resumen:  { total: filas.length, exitosos: exitosos.length, errores: errores.length },
+    resumen:  { total: filas.length, exitosos: exitosos.length, errores: errores.length, advertencias: advertencias.length },
     exitosos,
     errores,
+    advertencias,
   });
 }
 
@@ -204,10 +225,15 @@ async function generarPlantilla(req, res) {
   const wb = XLSX.utils.book_new();
 
   // ── Hoja 1: Productos ─────────────────────────────────────────────────────
+  const cat0  = categorias[0]?.nombre  || '*** ver hoja Referencia ***';
+  const cat1  = categorias[1]?.nombre  || cat0;
+  const ubic0 = ubicaciones[0]?.nombre || '*** ver hoja Referencia ***';
+  const ubic1 = ubicaciones[1]?.nombre || ubic0;
+
   const productosRows = [
     ['nombre', 'tipo', 'codigo', 'codigo_barras', 'descripcion', 'categoria', 'ubicacion', 'stock_actual', 'stock_minimo', 'unidad_medida', 'precio_referencia'],
-    ['Notebook HP 15', 'retornable', 'NB-001', '', 'Notebook para uso docente', categorias[0]?.nombre || 'Electrónica', ubicaciones[0]?.nombre || 'Depósito A', 5, 2, 'unidades', 85000],
-    ['Marcador azul pizarrón', 'consumible', '', '', 'Marcador para pizarrón color azul', categorias[1]?.nombre || 'Papelería', ubicaciones[1]?.nombre || 'Depósito B', 50, 10, 'unidades', 350],
+    ['[EJEMPLO - borrar esta fila] Notebook HP 15', 'retornable', 'NB-001', '', 'Notebook para uso docente', cat0, ubic0, 5, 2, 'unidades', 85000],
+    ['[EJEMPLO - borrar esta fila] Marcador azul pizarrón', 'consumible', '', '', 'Marcador para pizarrón color azul', cat1, ubic1, 50, 10, 'unidades', 350],
   ];
   const wsProductos = XLSX.utils.aoa_to_sheet(productosRows);
   wsProductos['!cols'] = [

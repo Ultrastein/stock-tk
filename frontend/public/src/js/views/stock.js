@@ -24,6 +24,65 @@ function tip(text) {
   return `<span class="field-tip" data-tip="${esc(text)}" aria-label="${esc(text)}">!</span>`;
 }
 
+/**
+ * Activa los tooltips de todos los .field-tip dentro de `container`.
+ * Usa un globo position:fixed en <body> para no quedar atrapado
+ * por el overflow:hidden del modal.
+ */
+function initTips(container) {
+  const MARGIN = 10; // px mínimos del borde del viewport
+
+  let popup = document.getElementById('field-tip-popup');
+  if (!popup) {
+    popup = document.createElement('div');
+    popup.id = 'field-tip-popup';
+    document.body.appendChild(popup);
+  }
+
+  container.querySelectorAll('.field-tip').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      const text = el.dataset.tip;
+      if (!text) return;
+
+      popup.textContent = text;
+      popup.className = '';
+      popup.style.display = 'block';
+      popup.style.opacity  = '0';
+
+      const elRect  = el.getBoundingClientRect();
+      const pw      = popup.offsetWidth;
+      const ph      = popup.offsetHeight;
+
+      // Intentar arriba, si no hay espacio colocar abajo
+      const spaceAbove = elRect.top - ph - 10;
+      const above      = spaceAbove >= MARGIN;
+
+      let top  = above ? elRect.top - ph - 10 : elRect.bottom + 10;
+      let left = elRect.left + elRect.width / 2 - pw / 2;
+
+      // Clamp horizontal para que no salga del viewport
+      left = Math.max(MARGIN, Math.min(left, window.innerWidth - pw - MARGIN));
+
+      // Ajustar la flecha al centro real del ícono, no del globo
+      const arrowOffset = (elRect.left + elRect.width / 2) - left;
+      const clampedArrow = Math.max(12, Math.min(arrowOffset, pw - 12));
+      popup.style.setProperty('--arrow-left', `${clampedArrow}px`);
+
+      popup.style.left = `${left}px`;
+      popup.style.top  = `${top}px`;
+      popup.classList.add(above ? 'tip-above' : 'tip-below');
+      popup.classList.add('visible');
+    });
+
+    el.addEventListener('mouseleave', () => {
+      popup.classList.remove('visible');
+      setTimeout(() => {
+        if (!popup.classList.contains('visible')) popup.style.display = 'none';
+      }, 150);
+    });
+  });
+}
+
 export default class StockView {
   constructor(container) {
     this.container      = container;
@@ -239,6 +298,7 @@ export default class StockView {
         </div>
       </div>
     `;
+    initTips(formEl);
 
     new Promise(resolve => {
       const modal = new Modal({
@@ -492,16 +552,27 @@ export default class StockView {
     const renderResultado = (res) => {
       const div = el.querySelector('#iresultado');
       div.style.display = '';
-      const { resumen, exitosos, errores } = res;
+      const { resumen, exitosos, errores, advertencias = [] } = res;
       let html = `
         <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
           <span class="badge badge-green">✔ ${resumen.exitosos} importados</span>
+          ${advertencias.length > 0 ? `<span class="badge badge-yellow">⚠ ${advertencias.length} aviso${advertencias.length > 1 ? 's' : ''}</span>` : ''}
           ${resumen.errores > 0 ? `<span class="badge badge-red">✖ ${resumen.errores} con error</span>` : ''}
           <span style="font-size:12px;color:var(--text-secondary,#8896b0);align-self:center">
             Total: ${resumen.total} filas
           </span>
         </div>
       `;
+      if (advertencias.length > 0) {
+        html += `
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--warning,#e0a035)">
+            Avisos — creados automáticamente:
+          </div>
+          <ul style="font-size:12px;margin:0 0 12px;padding-left:18px;color:var(--warning,#e0a035)">
+            ${advertencias.map(a => `<li>${esc(a)}</li>`).join('')}
+          </ul>
+        `;
+      }
       if (errores.length > 0) {
         html += `
           <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--danger,#e05c5c)">
@@ -560,7 +631,10 @@ export default class StockView {
         renderResultado(res);
         if (tabActual === 'productos') await this._loadProductos();
         else                           await this._loadActivos();
-        if (res.resumen.errores === 0) Toast.show(`${res.resumen.exitosos} registros importados`, 'success');
+        if (res.resumen.errores === 0) {
+          const aviso = (res.advertencias?.length > 0) ? ` (${res.advertencias.length} aviso${res.advertencias.length > 1 ? 's' : ''})` : '';
+          Toast.show(`${res.resumen.exitosos} registros importados${aviso}`, 'success');
+        }
       } catch (e) {
         Toast.show(e.message, 'error');
       } finally {
