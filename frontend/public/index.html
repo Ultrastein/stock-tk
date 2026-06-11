@@ -13,33 +13,12 @@
   <link rel="icon" href="icons/logo-tk.png">
   <link rel="apple-touch-icon" href="icons/logo-tk.png">
 
-  <!-- CSS del sistema de diseño -->
-  <link rel="stylesheet" href="src/css/variables.css">
-  <link rel="stylesheet" href="src/css/base.css">
-  <link rel="stylesheet" href="src/css/components.css">
-  <link rel="stylesheet" href="src/css/layouts.css">
-  <link rel="stylesheet" href="src/css/kiosk.css">
-  <link rel="stylesheet" href="src/css/animations.css">
-
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- html5-qrcode (escáner QR) — MUST load before app.js -->
+  <!-- html5-qrcode (escáner QR) — UMD global, mantener como CDN -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-
-  <!-- Firebase SDK (compat, módulos globales) — carga antes de firebase-config.js -->
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-  <!-- Configuración Firebase — editá este archivo con tus credenciales -->
-  <script src="src/js/firebase-config.js"></script>
-
-  <!-- URL del backend: producción (GitHub Pages) vs local -->
-  <script>
-    window.API_BASE_URL = location.hostname === 'ultrastein.github.io'
-      ? 'https://stock-tk-api.onrender.com/api'
-      : `http://${location.hostname}:3000/api`;
-  </script>
 </head>
 <body>
   <!-- Barra offline -->
@@ -53,7 +32,7 @@
   <!-- Firma del proyecto -->
   <div id="firma-proyecto">prof. Nicolas Kane</div>
 
-  <!-- Entry point de la app -->
-  <script type="module" src="src/js/app.js"></script>
+  <!-- Entry point de la app (Vite bundler) -->
+  <script type="module" src="./src/js/main.js"></script>
 </body>
 </html>

@@ -2,7 +2,16 @@ import { getToken, clearAuth } from '../store/state.js';
 import { syncQueue } from '../store/db.js';
 
 function getBaseUrl() {
-  return window.API_BASE_URL || 'http://localhost:3000/api';
+  // Determinar URL del backend según entorno (producción GitHub Pages vs local)
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host === 'ultrastein.github.io') {
+      return 'https://stock-tk-api.onrender.com/api';
+    }
+    // Desarrollo local: mismo host, puerto del backend
+    return `http://${host}:3000/api`;
+  }
+  return 'http://localhost:3000/api';
 }
 
 export class ApiError extends Error {
