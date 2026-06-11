@@ -3,7 +3,7 @@
    Cache-first for static, Network-first for API
    ============================================ */
 
-const CACHE_VERSION = 'stock-ctrl-v1';
+const CACHE_VERSION = 'stock-ctrl-v2-20260611';
 const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const API_CACHE = `api-${CACHE_VERSION}`;
 const SYNC_TAG = 'sync-operations';
@@ -37,16 +37,13 @@ const PRECACHE_ASSETS = [
 
 // ── Install ──────────────────────────────────
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker...');
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
-        console.log('[SW] Pre-caching static assets');
         return cache.addAll(PRECACHE_ASSETS);
       })
       .then(() => self.skipWaiting())
-      .catch((err) => {
-        console.warn('[SW] Pre-cache failed (some assets may not exist yet):', err);
+      .catch(() => {
         return self.skipWaiting();
       })
   );
@@ -54,7 +51,6 @@ self.addEventListener('install', (event) => {
 
 // ── Activate ─────────────────────────────────
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker...');
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
@@ -62,7 +58,6 @@ self.addEventListener('activate', (event) => {
           cacheNames
             .filter((name) => name !== STATIC_CACHE && name !== API_CACHE)
             .map((name) => {
-              console.log('[SW] Deleting old cache:', name);
               return caches.delete(name);
             })
         );
@@ -162,7 +157,6 @@ async function processSyncQueue() {
     return new Promise((resolve, reject) => {
       request.onsuccess = async () => {
         const operations = request.result;
-        console.log(`[SW] Processing ${operations.length} queued operations`);
 
         for (const op of operations) {
           try {
@@ -184,16 +178,16 @@ async function processSyncQueue() {
                 });
               });
             }
-          } catch (err) {
-            console.warn('[SW] Failed to sync operation:', op.id, err);
+          } catch {
+            // operation stays in queue for next sync attempt
           }
         }
         resolve();
       };
       request.onerror = () => reject(request.error);
     });
-  } catch (error) {
-    console.error('[SW] Sync queue processing failed:', error);
+  } catch {
+    // sync will be retried on next sync event
   }
 }
 

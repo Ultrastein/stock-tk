@@ -2,7 +2,7 @@ const db = require('../models');
 const { Producto, ActivoFijo, Categoria, Ubicacion } = db;
 const { parsearCSV, parsearExcel } = require('../utils/csvParser');
 const { generarCodigo, generarCodigoQR } = require('../utils/codeGenerator');
-const { registrarMovimiento } = require('../services/historial.service');
+const { registrarMovimiento, registrarMovimientosBulk } = require('../services/historial.service');
 const { ACCION_HISTORIAL, TIPO_PRODUCTO } = require('../config/constants');
 const XLSX = require('xlsx');
 
@@ -37,6 +37,7 @@ async function importarProductos(req, res) {
   const catPorNombre  = new Map(todasCategorias.map(c => [c.nombre.toLowerCase().trim(), c.id]));
   const ubicPorNombre = new Map(todasUbicaciones.map(u => [u.nombre.toLowerCase().trim(), u.id]));
 
+  const movimientos  = [];
   const exitosos   = [];
   const errores    = [];
   const advertencias = [];
@@ -106,7 +107,7 @@ async function importarProductos(req, res) {
         precio_referencia: parseFloat(fila.precio_referencia) || null,
       });
 
-      await registrarMovimiento({
+      movimientos.push({
         usuario_id:   req.user.id,
         accion:       ACCION_HISTORIAL.CREACION,
         entidad_tipo: 'Producto',
@@ -120,6 +121,10 @@ async function importarProductos(req, res) {
     } catch (e) {
       errores.push({ fila: i + 2, error: e.message });
     }
+  }
+
+  if (movimientos.length > 0) {
+    await registrarMovimientosBulk(movimientos);
   }
 
   return res.json({
@@ -150,6 +155,7 @@ async function importarActivos(req, res) {
   const todosProductos = await Producto.findAll({ attributes: ['id', 'codigo'] });
   const prodPorCodigo  = new Map(todosProductos.map(p => [p.codigo.toLowerCase().trim(), p.id]));
 
+  const movimientos = [];
   const exitosos = [];
   const errores  = [];
 
@@ -183,7 +189,7 @@ async function importarActivos(req, res) {
         notas:             fila.notas             || null,
       });
 
-      await registrarMovimiento({
+      movimientos.push({
         usuario_id:     req.user.id,
         accion:         ACCION_HISTORIAL.CREACION,
         entidad_tipo:   'ActivoFijo',
@@ -199,6 +205,10 @@ async function importarActivos(req, res) {
     } catch (e) {
       errores.push({ fila: i + 2, error: e.message });
     }
+  }
+
+  if (movimientos.length > 0) {
+    await registrarMovimientosBulk(movimientos);
   }
 
   return res.json({

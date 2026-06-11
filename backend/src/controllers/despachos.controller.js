@@ -82,8 +82,21 @@ async function checkout(req, res) {
 
     const movimientos = [];
 
+    // Pre-cargar productos y activos antes del loop para evitar N+1 queries
+    const productoIds = [...new Set(items.map(i => i.producto_id).filter(Boolean))];
+    const activoFijoIds = [...new Set(items.map(i => i.activo_fijo_id).filter(Boolean))];
+
+    const [productosArr, activosArr] = await Promise.all([
+      Producto.findAll({ where: { id: productoIds }, transaction: t }),
+      activoFijoIds.length
+        ? ActivoFijo.findAll({ where: { id: activoFijoIds }, transaction: t })
+        : Promise.resolve([]),
+    ]);
+    const productosMap = new Map(productosArr.map(p => [p.id, p]));
+    const activosMap   = new Map(activosArr.map(a => [a.id, a]));
+
     for (const item of items) {
-      const producto = await Producto.findByPk(item.producto_id, { transaction: t });
+      const producto = productosMap.get(item.producto_id);
       if (!producto) {
         await t.rollback();
         return res.status(404).json({ error: `Producto ${item.producto_id} no encontrado.` });
@@ -91,7 +104,7 @@ async function checkout(req, res) {
 
       let activoFijo = null;
       if (item.activo_fijo_id) {
-        activoFijo = await ActivoFijo.findByPk(item.activo_fijo_id, { transaction: t });
+        activoFijo = activosMap.get(item.activo_fijo_id) || null;
         if (!activoFijo) {
           await t.rollback();
           return res.status(404).json({ error: `Activo ${item.activo_fijo_id} no encontrado.` });
@@ -187,15 +200,28 @@ async function checkin(req, res) {
     const ticketsCreados = [];
     let completado = true;
 
+    // Pre-cargar productos y activos del despacho original para evitar N+1 queries
+    const productosIds2 = [...new Set(despachoOriginal.items.map(i => i.producto_id).filter(Boolean))];
+    const activosIds2   = [...new Set(despachoOriginal.items.map(i => i.activo_fijo_id).filter(Boolean))];
+
+    const [productosArr2, activosArr2] = await Promise.all([
+      Producto.findAll({ where: { id: productosIds2 }, transaction: t }),
+      activosIds2.length
+        ? ActivoFijo.findAll({ where: { id: activosIds2 }, transaction: t })
+        : Promise.resolve([]),
+    ]);
+    const productosMap2 = new Map(productosArr2.map(p => [p.id, p]));
+    const activosMap2   = new Map(activosArr2.map(a => [a.id, a]));
+
     for (const dev of items_devueltos) {
       const itemOriginal = despachoOriginal.items.find(i => i.id === dev.despacho_item_id);
       if (!itemOriginal) continue;
 
-      const producto = await Producto.findByPk(itemOriginal.producto_id, { transaction: t });
+      const producto = productosMap2.get(itemOriginal.producto_id);
 
       if (itemOriginal.activo_fijo_id) {
         // Retornable
-        const activo = await ActivoFijo.findByPk(itemOriginal.activo_fijo_id, { transaction: t });
+        const activo = activosMap2.get(itemOriginal.activo_fijo_id);
         const estadoAnterior = activo.estado;
         let nuevoEstado;
         let estadoDevolucion;

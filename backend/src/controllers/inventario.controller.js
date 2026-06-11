@@ -69,29 +69,32 @@ async function iniciar(req, res) {
 
     // Cargar todos los productos consumibles
     const productos = await Producto.findAll({ where: { tipo: 'consumible' }, transaction: t });
-    for (const p of productos) {
-      await InventarioFisicoItem.create({
-        inventario_id: inventario.id,
-        producto_id: p.id,
-        cantidad_esperada: p.stock_actual,
-        cantidad_contada: null,
-        diferencia: null,
-      }, { transaction: t });
-    }
+    const itemsProductos = productos.map(p => ({
+      inventario_id: inventario.id,
+      producto_id: p.id,
+      cantidad_esperada: p.stock_actual,
+      cantidad_contada: null,
+      diferencia: null,
+    }));
 
     // Cargar todos los activos fijos (excepto dados de baja)
     const activos = await ActivoFijo.findAll({
       where: { estado: ['disponible', 'en_uso', 'en_reparacion', 'dañado'] },
       transaction: t,
     });
-    for (const a of activos) {
-      await InventarioFisicoItem.create({
-        inventario_id: inventario.id,
-        activo_fijo_id: a.id,
-        cantidad_esperada: 1,
-        cantidad_contada: null,
-        diferencia: null,
-      }, { transaction: t });
+    const itemsActivos = activos.map(a => ({
+      inventario_id: inventario.id,
+      activo_fijo_id: a.id,
+      cantidad_esperada: 1,
+      cantidad_contada: null,
+      diferencia: null,
+    }));
+
+    if (itemsProductos.length + itemsActivos.length > 0) {
+      await InventarioFisicoItem.bulkCreate(
+        [...itemsProductos, ...itemsActivos],
+        { transaction: t }
+      );
     }
 
     await inventario.update({ estado: ESTADO_INVENTARIO.EN_PROCESO }, { transaction: t });
