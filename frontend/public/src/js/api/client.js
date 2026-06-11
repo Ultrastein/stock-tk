@@ -8,10 +8,10 @@ function getBaseUrl() {
     if (host === 'ultrastein.github.io') {
       return 'https://stock-tk-api.onrender.com/api';
     }
-    // Desarrollo local: mismo host, puerto del backend
-    return `http://${host}:3000/api`;
+    // Desarrollo local: URL relativa para que Vite proxy reenvíe a puerto 3001
+    return '/api';
   }
-  return 'http://localhost:3000/api';
+  return '/api';
 }
 
 export class ApiError extends Error {

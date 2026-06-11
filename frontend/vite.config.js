@@ -3,7 +3,6 @@ import { resolve } from 'path'
 
 export default defineConfig({
   root: 'public',          // index.html lives in public/
-  publicDir: 'public',     // static assets (icons, manifest, sw.js)
   build: {
     outDir: '../dist',
     emptyOutDir: true,
