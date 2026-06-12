@@ -85,13 +85,15 @@ function initTips(container) {
 
 export default class StockView {
   constructor(container) {
-    this.container      = container;
-    this._tab           = 'productos';
-    this._categorias    = [];
-    this._ubicaciones   = [];
-    this._dtProductos   = null;
-    this._dtActivos     = null;
-    this._layoutDestroy = null;
+    this.container           = container;
+    this._tab                = 'productos';
+    this._categorias         = [];
+    this._ubicaciones        = [];
+    this._dtProductos        = null;
+    this._dtActivos          = null;
+    this._layoutDestroy      = null;
+    this.currentPage         = 1;
+    this.currentActivosPage  = 1;
   }
 
   async render() {
@@ -226,16 +228,61 @@ export default class StockView {
 
   async _loadProductos() {
     try {
-      const res = await productosApi.listar();
+      const res = await productosApi.listar({ page: this.currentPage, limit: 50 });
       this._dtProductos.setData(Array.isArray(res.data) ? res.data : []);
+
+      // Render server-side pagination controls
+      const cardEl = this._dtProductos._container;
+      const existing = cardEl.parentElement.querySelector('.pagination-productos');
+      if (existing) existing.remove();
+      if (res.pagination) {
+        const paginationEl = this._renderPagination(res.pagination, (newPage) => {
+          this.currentPage = newPage;
+          this._loadProductos();
+        });
+        if (paginationEl) {
+          paginationEl.classList.add('pagination-productos');
+          cardEl.insertAdjacentElement('afterend', paginationEl);
+        }
+      }
     } catch (e) { Toast.show('Error al cargar productos', 'error'); }
   }
 
   async _loadActivos() {
     try {
-      const res = await activosApi.listar();
+      const res = await activosApi.listar({ page: this.currentActivosPage, limit: 50 });
       this._dtActivos.setData(Array.isArray(res.data) ? res.data : []);
+
+      // Render server-side pagination controls
+      const cardEl = this._dtActivos._container;
+      const existing = cardEl.parentElement.querySelector('.pagination-activos');
+      if (existing) existing.remove();
+      if (res.pagination) {
+        const paginationEl = this._renderPagination(res.pagination, (newPage) => {
+          this.currentActivosPage = newPage;
+          this._loadActivos();
+        });
+        if (paginationEl) {
+          paginationEl.classList.add('pagination-activos');
+          cardEl.insertAdjacentElement('afterend', paginationEl);
+        }
+      }
     } catch (e) { Toast.show('Error al cargar activos', 'error'); }
+  }
+
+  _renderPagination(pagination, onChangePage) {
+    const { page, pages } = pagination;
+    if (pages <= 1) return null;
+    const container = document.createElement('div');
+    container.className = 'pagination';
+    container.innerHTML = `
+      <button ${page <= 1 ? 'disabled' : ''}>← Anterior</button>
+      <span>Página ${page} de ${pages}</span>
+      <button ${page >= pages ? 'disabled' : ''}>Siguiente →</button>
+    `;
+    container.querySelectorAll('button')[0].addEventListener('click', () => onChangePage(page - 1));
+    container.querySelectorAll('button')[1].addEventListener('click', () => onChangePage(page + 1));
+    return container;
   }
 
   // ── Productos CRUD ────────────────────────────────────────────────────────

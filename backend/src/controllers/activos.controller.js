@@ -13,17 +13,26 @@ const { ACCION_HISTORIAL } = require('../config/constants');
  */
 async function listar(req, res) {
   try {
-    const activos = await ActivoFijo.findAll({
+    const page   = Math.max(1, parseInt(req.query.page)  || 1)
+    const limit  = Math.min(100, parseInt(req.query.limit) || 50)
+    const offset = (page - 1) * limit
+
+    const { count, rows } = await ActivoFijo.findAndCountAll({
       include: [
         { model: Producto, as: 'producto' },
       ],
       order: [['created_at', 'DESC']],
-    });
+      limit,
+      offset,
+    })
 
-    return res.json({ data: activos });
+    return res.json({
+      data: rows,
+      pagination: { total: count, page, limit, pages: Math.ceil(count / limit) }
+    })
   } catch (error) {
     console.error('Error al listar activos fijos:', error);
-    return res.status(500).json({ error: 'Error al obtener activos fijos.' });
+    return res.status(500).json({ error: 'Error al obtener activos fijos.' })
   }
 }
 
