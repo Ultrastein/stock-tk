@@ -18,6 +18,7 @@ async function listar(req, res) {
     const offset = (page - 1) * limit
 
     const { count, rows } = await ActivoFijo.findAndCountAll({
+      distinct: true,
       include: [
         { model: Producto, as: 'producto' },
       ],

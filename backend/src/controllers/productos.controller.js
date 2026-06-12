@@ -18,6 +18,7 @@ async function listar(req, res) {
     const offset = (page - 1) * limit
 
     const { count, rows } = await Producto.findAndCountAll({
+      distinct: true,
       include: [
         { model: Categoria, as: 'categoria' },
         { model: Ubicacion, as: 'ubicacion' },

@@ -142,6 +142,8 @@ export default class StockView {
     // ── DataTable Productos ───────────────────────────────────────────────
     this._dtProductos = new DataTable({
       container: mainContent.querySelector('#table-container-productos'),
+      // TODO: server-side search — DataTable search only filters current page
+      searchable: false,
       emptyText: 'Sin productos registrados',
       columns: [
         { key: 'codigo',       label: 'Código',   sortable: true },
@@ -166,6 +168,8 @@ export default class StockView {
     // ── DataTable Activos ─────────────────────────────────────────────────
     this._dtActivos = new DataTable({
       container: mainContent.querySelector('#table-container-activos'),
+      // TODO: server-side search — DataTable search only filters current page
+      searchable: false,
       emptyText: 'Sin activos registrados',
       columns: [
         { key: 'numero_serie', label: 'N° Serie',  sortable: true },
@@ -276,9 +280,9 @@ export default class StockView {
     const container = document.createElement('div');
     container.className = 'pagination';
     container.innerHTML = `
-      <button ${page <= 1 ? 'disabled' : ''}>← Anterior</button>
+      <button class="btn btn-secondary" ${page <= 1 ? 'disabled' : ''}>← Anterior</button>
       <span>Página ${page} de ${pages}</span>
-      <button ${page >= pages ? 'disabled' : ''}>Siguiente →</button>
+      <button class="btn btn-secondary" ${page >= pages ? 'disabled' : ''}>Siguiente →</button>
     `;
     container.querySelectorAll('button')[0].addEventListener('click', () => onChangePage(page - 1));
     container.querySelectorAll('button')[1].addEventListener('click', () => onChangePage(page + 1));
@@ -379,6 +383,7 @@ export default class StockView {
         if (producto) await productosApi.actualizar(producto.id, body);
         else          await productosApi.crear(body);
         Toast.show(producto ? 'Producto actualizado' : 'Producto creado', 'success');
+        if (!producto) this.currentPage = 1;
         await this._loadProductos();
       } catch (e) { Toast.show(e.message, 'error'); }
     });
@@ -395,6 +400,7 @@ export default class StockView {
     try {
       await productosApi.eliminar(producto.id);
       Toast.show('Producto eliminado', 'success');
+      this.currentPage = 1;
       await this._loadProductos();
     } catch (e) { Toast.show(e.message, 'error'); }
   }
@@ -454,6 +460,7 @@ export default class StockView {
         if (activo) await activosApi.actualizar(activo.id, body);
         else        await activosApi.crear(body);
         Toast.show(activo ? 'Activo actualizado' : 'Activo creado', 'success');
+        if (!activo) this.currentActivosPage = 1;
         await this._loadActivos();
       } catch (e) { Toast.show(e.message, 'error'); }
     });
@@ -470,6 +477,7 @@ export default class StockView {
     try {
       await activosApi.eliminar(activo.id);
       Toast.show('Activo eliminado', 'success');
+      this.currentActivosPage = 1;
       await this._loadActivos();
     } catch (e) { Toast.show(e.message, 'error'); }
   }
