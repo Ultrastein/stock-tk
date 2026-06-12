@@ -48,7 +48,6 @@ function initTips(container) {
       popup.textContent = text;
       popup.className = '';
       popup.style.display = 'block';
-      popup.style.opacity  = '0';
 
       const elRect  = el.getBoundingClientRect();
       const pw      = popup.offsetWidth;

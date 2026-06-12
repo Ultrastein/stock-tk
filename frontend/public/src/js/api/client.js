@@ -52,7 +52,9 @@ export async function request(method, path, body = null, options = {}) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new ApiError(response.status, errorData.mensaje || `Error ${response.status}`);
+      const base = errorData.mensaje || errorData.error || `Error ${response.status}`;
+      const detail = errorData.detalle ? ` (${errorData.detalle})` : '';
+      throw new ApiError(response.status, base + detail);
     }
 
     return await response.json();
