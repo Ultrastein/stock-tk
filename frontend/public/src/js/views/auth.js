@@ -6,6 +6,11 @@ import { setAuth }          from '../store/state.js';
 import { userData }         from '../store/db.js';
 import { auth as authApi }  from '../api/endpoints.js';
 import { Toast }            from '../components/Toast.js';
+import {
+  auth,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from '../firebase-config.js';
 
 function defaultRoute(rol) {
   if (rol === 'kiosco') return '#/kiosk';
@@ -193,11 +198,6 @@ export default class AuthView {
 
     // ── Botón Google ───────────────────────────────────────────────────
     document.getElementById('btn-google')?.addEventListener('click', () => {
-      // Verificar disponibilidad al hacer click (no al renderizar)
-      if (!window._firebaseAuth) {
-        this._showError(errorEl, 'Firebase Auth no está listo. Recargá la página e intentá de nuevo.');
-        return;
-      }
       this._signInWithProvider('google', errorEl);
     });
 
@@ -209,12 +209,6 @@ export default class AuthView {
 
   // ── Login con proveedor Firebase (Google / Apple) ───────────────────
   async _signInWithProvider(providerName, errorEl) {
-    const auth = window._firebaseAuth;
-    if (!auth) {
-      this._showError(errorEl, 'Firebase no está configurado. Editá firebase-config.js.');
-      return;
-    }
-
     // Deshabilitar botones durante el flujo
     const btnGoogle = document.getElementById('btn-google');
     const btnApple  = document.getElementById('btn-apple');
@@ -227,21 +221,20 @@ export default class AuthView {
       // Crear el provider correcto
       let provider;
       if (providerName === 'google') {
-        provider = new firebase.auth.GoogleAuthProvider();
+        provider = new GoogleAuthProvider();
         provider.addScope('email');
         provider.addScope('profile');
         // Forzar selección de cuenta aunque ya haya una activa
         provider.setCustomParameters({ prompt: 'select_account' });
       } else if (providerName === 'apple') {
-        provider = new firebase.auth.OAuthProvider('apple.com');
-        provider.addScope('email');
-        provider.addScope('name');
+        // Apple login no está habilitado actualmente
+        throw new Error('Login con Apple no está disponible en este momento.');
       } else {
         throw new Error(`Proveedor desconocido: ${providerName}`);
       }
 
-      // Popup de autenticación
-      const result = await auth.signInWithPopup(provider);
+      // Popup de autenticación (modular SDK: signInWithPopup(auth, provider))
+      const result = await signInWithPopup(auth, provider);
 
       // Obtener el ID token de Firebase
       const idToken = await result.user.getIdToken();
