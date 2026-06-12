@@ -1,0 +1,66 @@
+# =====================================================
+# ORQUESTACIÓN LOCAL ON-PREMISE — Docker Compose
+#
+# Uso:
+#   cp backend/.env.example backend/.env
+#   # Editar backend/.env con tus credenciales
+#   docker compose up -d
+#
+# Variables requeridas en backend/.env:
+#   DB_PASSWORD, JWT_SECRET
+# =====================================================
+version: '3.9'
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: stock-tk-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       control_stock
+      POSTGRES_USER:     postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-cambia_esta_clave_segura}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"   # Solo accesible desde localhost
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: stock-tk-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV:                   production
+      DB_HOST:                    postgres
+      DB_PORT:                    5432
+      DB_NAME:                    control_stock
+      DB_USER:                    postgres
+      DB_PASSWORD:                ${DB_PASSWORD:-cambia_esta_clave_segura}
+      JWT_SECRET:                 ${JWT_SECRET}
+      JWT_EXPIRES_IN:             24h
+      JWT_REFRESH_EXPIRES_IN:     7d
+      PORT:                       3000
+      FRONTEND_URL:               ${FRONTEND_URL:-http://localhost:5173}
+      COLD_STORAGE_PATH:          /srv/cold-storage
+      COLD_STORAGE_RETENTION_YEARS: ${COLD_STORAGE_RETENTION_YEARS:-3}
+    volumes:
+      - cold_storage:/srv/cold-storage
+    ports:
+      - "3000:3000"
+
+volumes:
+  pgdata:
+    driver: local
+  cold_storage:
+    driver: local

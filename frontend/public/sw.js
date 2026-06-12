@@ -8,8 +8,8 @@ const STATIC_CACHE = `static-${CACHE_VERSION}`;
 const API_CACHE = `api-${CACHE_VERSION}`;
 const SYNC_TAG = 'sync-operations';
 
-// Base dinámica — funciona en localhost (/), GitHub Pages (/control-de-stock/) y cualquier subpath
-const SCOPE = self.registration.scope; // ej: 'https://ultrastein.github.io/control-de-stock/'
+// Base dinámica — funciona en localhost (/) o cualquier subpath on-premise
+const SCOPE = self.registration.scope; // ej: 'http://192.168.1.100/stock-tk/'
 
 // Static assets to pre-cache
 const PRECACHE_ASSETS = [

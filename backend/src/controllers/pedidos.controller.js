@@ -188,8 +188,20 @@ async function avanzarEstado(req, res) {
 
 async function agregarCotizacion(req, res) {
   try {
-    const pedido = await PedidoReposicion.findByPk(req.params.id);
+    const pedido = await PedidoReposicion.findByPk(req.params.id, {
+      include: [{ model: ProveedorCotizacion, as: 'cotizaciones' }],
+    });
     if (!pedido) return res.status(404).json({ error: 'Pedido no encontrado.' });
+
+    const MAX_COTIZACIONES = 3;
+    const cantidadActual = pedido.cotizaciones?.length ?? 0;
+    if (cantidadActual >= MAX_COTIZACIONES) {
+      return res.status(400).json({
+        error: `El pedido ya tiene ${MAX_COTIZACIONES} cotizaciones comparativas (máximo permitido).`,
+        cotizaciones_actuales: cantidadActual,
+      });
+    }
+
     const cotizacion = await ProveedorCotizacion.create({ ...req.body, pedido_id: pedido.id });
     return res.status(201).json({ data: cotizacion });
   } catch (e) {
