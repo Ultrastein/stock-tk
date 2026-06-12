@@ -1,7 +1,8 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
-  root: 'public',          // index.html lives in public/
+  root: 'public',
+  base: './',               // relative assets — works on any subpath (GitHub Pages)
   build: {
     outDir: '../dist',
     emptyOutDir: true,
