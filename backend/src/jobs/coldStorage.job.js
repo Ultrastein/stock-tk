@@ -148,13 +148,16 @@ async function archivarHistorial() {
 
   const mes    = new Date().toISOString().slice(0, 7); // "2026-06"
   const nombre = `historial-${mes}.json.gz`;
-  const dir    = path.join(__dirname, '../../cold-storage');
-  const ruta   = path.join(dir, nombre);
-  fs.mkdirSync(dir, { recursive: true });
+  // Uses COLD_STORAGE_PATH so NAS/custom mounts work the same as the main job
+  const ruta   = path.join(COLD_STORAGE_PATH, nombre);
+  fs.mkdirSync(COLD_STORAGE_PATH, { recursive: true });
 
+  // Append mode: each weekly run adds a gzip member to the monthly file.
+  // Concatenated gzip is standard — gunzip/zcat decompress all members correctly.
   await new Promise((resolve, reject) => {
     const gz  = zlib.createGzip();
     const out = fs.createWriteStream(ruta, { flags: 'a' });
+    gz.on('error', reject);
     gz.pipe(out);
     gz.write(JSON.stringify(viejos));
     gz.end();
