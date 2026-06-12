@@ -72,12 +72,21 @@ export default class SettingsView {
         <div id="panel-ubicaciones" style="display:none">
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
             <input id="nueva-ubicacion-nombre" class="form-control" placeholder="Nombre (ej: Aula 5)" style="max-width:200px">
-            <select id="nueva-ubicacion-tipo" class="form-control" style="max-width:160px">
-              <option value="aula">Aula</option>
-              <option value="deposito">Depósito</option>
-              <option value="laboratorio">Laboratorio</option>
-              <option value="otro">Otro</option>
-            </select>
+            <input id="nueva-ubicacion-tipo" class="form-control" list="ubi-tipos-list"
+              placeholder="Tipo (ej: aula)" style="max-width:160px" autocomplete="off">
+            <datalist id="ubi-tipos-list">
+              <option value="aula">
+              <option value="deposito">
+              <option value="laboratorio">
+              <option value="sala de informatica">
+              <option value="biblioteca">
+              <option value="taller">
+              <option value="oficina">
+              <option value="cocina">
+              <option value="auditorio">
+              <option value="patio">
+              <option value="otro">
+            </datalist>
             <button class="btn btn-primary btn-sm" id="btn-crear-ubicacion">Agregar</button>
           </div>
           <div id="ubicaciones-list" class="settings-list"></div>
@@ -160,11 +169,17 @@ export default class SettingsView {
           </span>
           ${u.activo
             ? `<span style="font-size:var(--text-xs);color:var(--success)">Activo</span>
+               <button class="btn btn-ghost btn-sm btn-cambiar-rol" data-id="${esc(u.id)}" data-rol="${esc(u.rol)}" data-nombre="${esc(u.nombre)}"
+                 title="Cambiar rol" style="font-size:var(--text-xs)">Editar rol</button>
                <button class="btn btn-ghost btn-sm btn-desactivar-usuario" data-id="${esc(u.id)}"
                  title="Desactivar" style="color:var(--danger);font-size:var(--text-xs)">Desactivar</button>`
-            : `<span style="font-size:var(--text-xs);color:var(--text-muted)">Inactivo</span>
-               <button class="btn btn-ghost btn-sm btn-reactivar-usuario" data-id="${esc(u.id)}"
-                 title="Reactivar" style="color:var(--success);font-size:var(--text-xs)">Reactivar</button>`
+            : u.firebase_uid
+              ? `<span class="badge badge-yellow" style="font-size:10px">Pendiente Google</span>
+                 <button class="btn btn-ghost btn-sm btn-aprobar-usuario" data-id="${esc(u.id)}" data-nombre="${esc(u.nombre)}"
+                   title="Aprobar cuenta Google" style="color:var(--success);font-size:var(--text-xs)">Aprobar</button>`
+              : `<span style="font-size:var(--text-xs);color:var(--text-muted)">Inactivo</span>
+                 <button class="btn btn-ghost btn-sm btn-reactivar-usuario" data-id="${esc(u.id)}"
+                   title="Reactivar" style="color:var(--success);font-size:var(--text-xs)">Reactivar</button>`
           }
         </div>
       </div>
@@ -304,8 +319,12 @@ export default class SettingsView {
   _onUsuarioClick(e) {
     const desBtn = e.target.closest('.btn-desactivar-usuario');
     const reBtn  = e.target.closest('.btn-reactivar-usuario');
+    const rolBtn = e.target.closest('.btn-cambiar-rol');
+    const aprBtn = e.target.closest('.btn-aprobar-usuario');
     if (desBtn) this._toggleUsuario(desBtn.dataset.id, false);
     if (reBtn)  this._toggleUsuario(reBtn.dataset.id,  true);
+    if (rolBtn) this._openCambiarRolModal(rolBtn.dataset.id, rolBtn.dataset.rol, rolBtn.dataset.nombre);
+    if (aprBtn) this._openAprobarModal(aprBtn.dataset.id, aprBtn.dataset.nombre);
   }
 
   async _toggleUsuario(id, activar) {
@@ -317,6 +336,75 @@ export default class SettingsView {
     } catch (err) {
       Toast.show(err.message || 'Error al actualizar usuario.', 'error');
     }
+  }
+
+  _openCambiarRolModal(id, rolActual, nombre) {
+    const formEl = document.createElement('div');
+    formEl.style.cssText = 'display:flex;flex-direction:column;gap:14px';
+    formEl.innerHTML = `
+      <p style="color:var(--text-secondary);font-size:var(--text-sm);margin:0">
+        Cambiando rol de <strong>${esc(nombre)}</strong>
+      </p>
+      <div>
+        <label class="form-label">Nuevo rol</label>
+        <select id="m-rol" class="form-control">
+          <option value="docente" ${rolActual === 'docente' ? 'selected' : ''}>Docente</option>
+          <option value="admin"   ${rolActual === 'admin'   ? 'selected' : ''}>Administrador</option>
+          <option value="kiosco"  ${rolActual === 'kiosco'  ? 'selected' : ''}>Kiosco</option>
+        </select>
+      </div>
+    `;
+    new Promise(resolve => {
+      const modal = new Modal({ title: 'Cambiar rol', content: formEl, confirmText: 'Guardar' });
+      modal.onConfirm(() => { modal.hide(); resolve(true); });
+      modal.onCancel(()  => { modal.hide(); resolve(false); });
+      modal.show();
+    }).then(async ok => {
+      if (!ok) return;
+      const rol = formEl.querySelector('#m-rol')?.value;
+      try {
+        await usuariosApi.actualizar(id, { rol });
+        Toast.show('Rol actualizado.', 'success');
+        await this._reloadUsuarios();
+      } catch (err) {
+        Toast.show(err.message || 'Error al cambiar el rol.', 'error');
+      }
+    });
+  }
+
+  _openAprobarModal(id, nombre) {
+    const formEl = document.createElement('div');
+    formEl.style.cssText = 'display:flex;flex-direction:column;gap:14px';
+    formEl.innerHTML = `
+      <p style="color:var(--text-secondary);font-size:var(--text-sm);margin:0">
+        Aprobando la cuenta Google de <strong>${esc(nombre)}</strong>.<br>
+        Asigná un rol para habilitar el acceso.
+      </p>
+      <div>
+        <label class="form-label">Rol *</label>
+        <select id="m-rol-aprobar" class="form-control">
+          <option value="docente">Docente</option>
+          <option value="admin">Administrador</option>
+          <option value="kiosco">Kiosco</option>
+        </select>
+      </div>
+    `;
+    new Promise(resolve => {
+      const modal = new Modal({ title: 'Aprobar usuario Google', content: formEl, confirmText: 'Aprobar y habilitar' });
+      modal.onConfirm(() => { modal.hide(); resolve(true); });
+      modal.onCancel(()  => { modal.hide(); resolve(false); });
+      modal.show();
+    }).then(async ok => {
+      if (!ok) return;
+      const rol = formEl.querySelector('#m-rol-aprobar')?.value;
+      try {
+        await usuariosApi.actualizar(id, { activo: true, rol });
+        Toast.show('Usuario aprobado. Ya puede ingresar con su cuenta Google.', 'success');
+        await this._reloadUsuarios();
+      } catch (err) {
+        Toast.show(err.message || 'Error al aprobar el usuario.', 'error');
+      }
+    });
   }
 
   // ── Categorías actions ────────────────────────────────────────────────────────
@@ -356,12 +444,14 @@ export default class SettingsView {
   // ── Ubicaciones actions ───────────────────────────────────────────────────────
   async _crearUbicacion() {
     const nombre = document.getElementById('nueva-ubicacion-nombre')?.value.trim();
-    const tipo   = document.getElementById('nueva-ubicacion-tipo')?.value;
+    const tipo   = document.getElementById('nueva-ubicacion-tipo')?.value.trim().toLowerCase();
     if (!nombre) return Toast.show('Escribí un nombre de ubicación.', 'warning');
+    if (!tipo)   return Toast.show('Escribí un tipo de ubicación.', 'warning');
     try {
       await ubicacionesApi.crear({ nombre, tipo });
       Toast.show(`Ubicación "${nombre}" creada.`, 'success');
       document.getElementById('nueva-ubicacion-nombre').value = '';
+      document.getElementById('nueva-ubicacion-tipo').value = '';
       const r = await ubicacionesApi.listar();
       this._ubicaciones = Array.isArray(r?.data) ? r.data : (Array.isArray(r) ? r : []);
       this._renderUbicaciones();

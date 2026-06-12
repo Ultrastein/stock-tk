@@ -2,7 +2,6 @@
 // MODELO: UBICACIÓN
 // =====================================================
 const { DataTypes, Model } = require('sequelize');
-const { TIPO_UBICACION, values } = require('../config/constants');
 
 module.exports = (sequelize) => {
   class Ubicacion extends Model {
@@ -34,9 +33,9 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       tipo: {
-        type: DataTypes.ENUM(...values(TIPO_UBICACION)),
+        type: DataTypes.STRING(100),
         allowNull: false,
-        defaultValue: TIPO_UBICACION.AULA,
+        defaultValue: 'otro',
       },
       edificio: {
         type: DataTypes.STRING(100),
