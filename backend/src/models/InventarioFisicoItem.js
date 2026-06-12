@@ -47,11 +47,13 @@ module.exports = (sequelize) => {
       cantidad_esperada: {
         type: DataTypes.INTEGER,
         allowNull: true,
+        validate: { min: 0 },
         comment: 'Stock registrado en el sistema al momento del conteo',
       },
       cantidad_contada: {
         type: DataTypes.INTEGER,
         allowNull: true,
+        validate: { min: 0 },
         comment: 'Cantidad física real encontrada',
       },
       diferencia: {

@@ -13,18 +13,28 @@ const { ACCION_HISTORIAL } = require('../config/constants');
  */
 async function listar(req, res) {
   try {
-    const productos = await Producto.findAll({
+    const page   = Math.max(1, parseInt(req.query.page)  || 1)
+    const limit  = Math.min(100, parseInt(req.query.limit) || 50)
+    const offset = (page - 1) * limit
+
+    const { count, rows } = await Producto.findAndCountAll({
+      distinct: true,
       include: [
         { model: Categoria, as: 'categoria' },
         { model: Ubicacion, as: 'ubicacion' },
       ],
       order: [['created_at', 'DESC']],
-    });
+      limit,
+      offset,
+    })
 
-    return res.json({ data: productos });
+    return res.json({
+      data: rows,
+      pagination: { total: count, page, limit, pages: Math.ceil(count / limit) }
+    })
   } catch (error) {
     console.error('Error al listar productos:', error);
-    return res.status(500).json({ error: 'Error al obtener productos.' });
+    return res.status(500).json({ error: 'Error al obtener productos.' })
   }
 }
 

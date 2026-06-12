@@ -12,6 +12,7 @@
 const cron = require('node-cron');
 const fs   = require('fs');
 const path = require('path');
+const zlib = require('zlib');
 const db   = require('../models');
 const { HistorialMovimiento } = db;
 const { Op } = db.Sequelize;
@@ -131,4 +132,54 @@ function schedule() {
   console.log('[ColdStorage] Scheduler registrado (día 1 de cada mes, 02:00).');
 }
 
-module.exports = { schedule, ejecutarColdStorage };
+async function archivarHistorial() {
+  const retentionDays = parseInt(process.env.COLD_STORAGE_RETENTION_DAYS) || 90;
+  const limite = new Date();
+  limite.setDate(limite.getDate() - retentionDays);
+
+  const viejos = await HistorialMovimiento.findAll({
+    where: { created_at: { [Op.lt]: limite } },
+    raw: true,
+  });
+  if (!viejos.length) {
+    console.log('[cold-storage] Sin movimientos para archivar.');
+    return;
+  }
+
+  const mes    = new Date().toISOString().slice(0, 7); // "2026-06"
+  const nombre = `historial-${mes}.json.gz`;
+  // Uses COLD_STORAGE_PATH so NAS/custom mounts work the same as the main job
+  const ruta   = path.join(COLD_STORAGE_PATH, nombre);
+  fs.mkdirSync(COLD_STORAGE_PATH, { recursive: true });
+
+  // Append mode: each weekly run adds a gzip member to the monthly file.
+  // Concatenated gzip is standard — gunzip/zcat decompress all members correctly.
+  await new Promise((resolve, reject) => {
+    const gz  = zlib.createGzip();
+    const out = fs.createWriteStream(ruta, { flags: 'a' });
+    gz.on('error', reject);
+    gz.pipe(out);
+    gz.write(JSON.stringify(viejos));
+    gz.end();
+    out.on('finish', resolve);
+    out.on('error', reject);
+  });
+
+  const ids = viejos.map(h => h.id);
+  await HistorialMovimiento.destroy({ where: { id: { [Op.in]: ids } }, force: true });
+  console.log(`[cold-storage] Archivados ${ids.length} movimientos → ${nombre}`);
+}
+
+function scheduleHistorial() {
+  // Domingos a las 03:00
+  cron.schedule('0 3 * * 0', async () => {
+    try {
+      await archivarHistorial();
+    } catch (e) {
+      console.error('[cold-storage] Error en archivarHistorial:', e.message);
+    }
+  });
+  console.log('[ColdStorage] Historial scheduler registrado (domingos 3am).');
+}
+
+module.exports = { schedule, ejecutarColdStorage, archivarHistorial, scheduleHistorial };

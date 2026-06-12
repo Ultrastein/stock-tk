@@ -6,6 +6,7 @@ import { renderLayout }  from './_layout.js';
 import { DataTable }     from '../components/DataTable.js';
 import { Modal }         from '../components/Modal.js';
 import { Toast }         from '../components/Toast.js';
+import { showSkeleton }  from '../components/Skeleton.js';
 import {
   productos    as productosApi,
   activos      as activosApi,
@@ -85,13 +86,15 @@ function initTips(container) {
 
 export default class StockView {
   constructor(container) {
-    this.container      = container;
-    this._tab           = 'productos';
-    this._categorias    = [];
-    this._ubicaciones   = [];
-    this._dtProductos   = null;
-    this._dtActivos     = null;
-    this._layoutDestroy = null;
+    this.container           = container;
+    this._tab                = 'productos';
+    this._categorias         = [];
+    this._ubicaciones        = [];
+    this._dtProductos        = null;
+    this._dtActivos          = null;
+    this._layoutDestroy      = null;
+    this.currentPage         = 1;
+    this.currentActivosPage  = 1;
   }
 
   async render() {
@@ -140,6 +143,8 @@ export default class StockView {
     // ── DataTable Productos ───────────────────────────────────────────────
     this._dtProductos = new DataTable({
       container: mainContent.querySelector('#table-container-productos'),
+      // TODO: server-side search — DataTable search only filters current page
+      searchable: false,
       emptyText: 'Sin productos registrados',
       columns: [
         { key: 'codigo',       label: 'Código',   sortable: true },
@@ -164,6 +169,8 @@ export default class StockView {
     // ── DataTable Activos ─────────────────────────────────────────────────
     this._dtActivos = new DataTable({
       container: mainContent.querySelector('#table-container-activos'),
+      // TODO: server-side search — DataTable search only filters current page
+      searchable: false,
       emptyText: 'Sin activos registrados',
       columns: [
         { key: 'numero_serie', label: 'N° Serie',  sortable: true },
@@ -226,16 +233,65 @@ export default class StockView {
 
   async _loadProductos() {
     try {
-      const res = await productosApi.listar();
+      const tbody = this._dtProductos._el?.querySelector('tbody')
+      if (tbody) showSkeleton(tbody)
+      const res = await productosApi.listar({ page: this.currentPage, limit: 50 });
       this._dtProductos.setData(Array.isArray(res.data) ? res.data : []);
+
+      // Render server-side pagination controls
+      const cardEl = this._dtProductos._container;
+      const existing = cardEl.parentElement.querySelector('.pagination-productos');
+      if (existing) existing.remove();
+      if (res.pagination) {
+        const paginationEl = this._renderPagination(res.pagination, (newPage) => {
+          this.currentPage = newPage;
+          this._loadProductos();
+        });
+        if (paginationEl) {
+          paginationEl.classList.add('pagination-productos');
+          cardEl.insertAdjacentElement('afterend', paginationEl);
+        }
+      }
     } catch (e) { Toast.show('Error al cargar productos', 'error'); }
   }
 
   async _loadActivos() {
     try {
-      const res = await activosApi.listar();
+      const tbody = this._dtActivos._el?.querySelector('tbody')
+      if (tbody) showSkeleton(tbody)
+      const res = await activosApi.listar({ page: this.currentActivosPage, limit: 50 });
       this._dtActivos.setData(Array.isArray(res.data) ? res.data : []);
+
+      // Render server-side pagination controls
+      const cardEl = this._dtActivos._container;
+      const existing = cardEl.parentElement.querySelector('.pagination-activos');
+      if (existing) existing.remove();
+      if (res.pagination) {
+        const paginationEl = this._renderPagination(res.pagination, (newPage) => {
+          this.currentActivosPage = newPage;
+          this._loadActivos();
+        });
+        if (paginationEl) {
+          paginationEl.classList.add('pagination-activos');
+          cardEl.insertAdjacentElement('afterend', paginationEl);
+        }
+      }
     } catch (e) { Toast.show('Error al cargar activos', 'error'); }
+  }
+
+  _renderPagination(pagination, onChangePage) {
+    const { page, pages } = pagination;
+    if (pages <= 1) return null;
+    const container = document.createElement('div');
+    container.className = 'pagination';
+    container.innerHTML = `
+      <button class="btn btn-secondary" ${page <= 1 ? 'disabled' : ''}>← Anterior</button>
+      <span>Página ${page} de ${pages}</span>
+      <button class="btn btn-secondary" ${page >= pages ? 'disabled' : ''}>Siguiente →</button>
+    `;
+    container.querySelectorAll('button')[0].addEventListener('click', () => onChangePage(page - 1));
+    container.querySelectorAll('button')[1].addEventListener('click', () => onChangePage(page + 1));
+    return container;
   }
 
   // ── Productos CRUD ────────────────────────────────────────────────────────
@@ -332,6 +388,7 @@ export default class StockView {
         if (producto) await productosApi.actualizar(producto.id, body);
         else          await productosApi.crear(body);
         Toast.show(producto ? 'Producto actualizado' : 'Producto creado', 'success');
+        if (!producto) this.currentPage = 1;
         await this._loadProductos();
       } catch (e) { Toast.show(e.message, 'error'); }
     });
@@ -348,6 +405,7 @@ export default class StockView {
     try {
       await productosApi.eliminar(producto.id);
       Toast.show('Producto eliminado', 'success');
+      this.currentPage = 1;
       await this._loadProductos();
     } catch (e) { Toast.show(e.message, 'error'); }
   }
@@ -407,6 +465,7 @@ export default class StockView {
         if (activo) await activosApi.actualizar(activo.id, body);
         else        await activosApi.crear(body);
         Toast.show(activo ? 'Activo actualizado' : 'Activo creado', 'success');
+        if (!activo) this.currentActivosPage = 1;
         await this._loadActivos();
       } catch (e) { Toast.show(e.message, 'error'); }
     });
@@ -423,6 +482,7 @@ export default class StockView {
     try {
       await activosApi.eliminar(activo.id);
       Toast.show('Activo eliminado', 'success');
+      this.currentActivosPage = 1;
       await this._loadActivos();
     } catch (e) { Toast.show(e.message, 'error'); }
   }

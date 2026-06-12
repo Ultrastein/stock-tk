@@ -184,22 +184,25 @@ async function firebaseLogin(req, res) {
         // Vincular el UID de Firebase a la cuenta existente
         await usuario.update({ firebase_uid: uid });
       } else {
-        // 3. Crear cuenta nueva — rol docente por defecto
-        //    El admin puede cambiarlo luego desde el panel de usuarios
+        // 3. Crear cuenta nueva — pendiente de aprobación por el admin
         usuario = await Usuario.create({
           email,
           nombre:       name || email.split('@')[0],
           firebase_uid: uid,
           password_hash: null,
           rol:          'docente',
-          activo:       true,
+          activo:       false,
         });
       }
     }
 
     if (!usuario.activo) {
+      const esPendiente = !!usuario.firebase_uid;
       return res.status(401).json({
-        error: 'Tu cuenta está desactivada. Contactá al administrador.',
+        error: esPendiente
+          ? 'Tu cuenta está pendiente de aprobación por el administrador.'
+          : 'Tu cuenta está desactivada. Contactá al administrador.',
+        pendiente: esPendiente,
       });
     }
 

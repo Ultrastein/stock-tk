@@ -212,8 +212,9 @@
 select.form-control option { background: var(--bg-overlay); color: var(--text-primary); }
 
 /* ── Tooltip de ayuda en labels ─────────────────────────────── */
+/* El globo se genera en JS (initTips) con position:fixed para   */
+/* escapar del overflow:hidden de cualquier modal o contenedor.  */
 .field-tip {
-  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -234,44 +235,46 @@ select.form-control option { background: var(--bg-overlay); color: var(--text-pr
   user-select: none;
 }
 .field-tip:hover { opacity: 1; }
-.field-tip::after {
-  content: attr(data-tip);
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--bg-overlay);
-  color: var(--text-primary);
-  font-size: var(--text-xs);
+
+/* Globo compartido — posicionado por JS, vive en <body> */
+#field-tip-popup {
+  position: fixed;
+  z-index: 99999;
+  background: var(--bg-overlay, #1a2236);
+  color: var(--text-primary, #e8f1ff);
+  font-size: 12px;
   font-weight: 400;
-  line-height: 1.4;
-  white-space: normal;
-  width: max-content;
-  max-width: 220px;
-  padding: 6px 9px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  box-shadow: 0 4px 12px rgba(0,0,0,.35);
+  line-height: 1.45;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border, #2a3650);
+  box-shadow: 0 4px 14px rgba(0,0,0,.45);
+  max-width: 260px;
   pointer-events: none;
+  white-space: normal;
+  word-break: break-word;
+  display: none;
   opacity: 0;
   transition: opacity .15s;
-  z-index: 9999;
 }
-.field-tip::before {
+#field-tip-popup.visible { opacity: 1; }
+
+/* Flecha del globo — left se ajusta via JS con --arrow-left */
+#field-tip-popup::before {
   content: '';
   position: absolute;
-  bottom: calc(100% + 1px);
-  left: 50%;
+  left: var(--arrow-left, 50%);
   transform: translateX(-50%);
   border: 5px solid transparent;
-  border-top-color: var(--border);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .15s;
-  z-index: 9999;
 }
-.field-tip:hover::after,
-.field-tip:hover::before { opacity: 1; }
+#field-tip-popup.tip-above::before {
+  top: 100%;
+  border-top-color: var(--border, #2a3650);
+}
+#field-tip-popup.tip-below::before {
+  bottom: 100%;
+  border-bottom-color: var(--border, #2a3650);
+}
 
 /* ════════════════════════════════════════════════════════════
    BADGES / ETIQUETAS
@@ -466,3 +469,23 @@ select.form-control option { background: var(--bg-overlay); color: var(--text-pr
 ════════════════════════════════════════════════════════════ */
 .dt-wrapper { display: flex; flex-direction: column; gap: var(--sp-3); }
 .dt-search input.form-control { max-width: 320px; }
+
+/* Pagination */
+.pagination { display:flex; align-items:center; gap:12px; padding:12px 0; }
+.pagination button { padding:6px 14px; border-radius:6px; cursor:pointer; }
+.pagination button:disabled { opacity:.4; cursor:default; }
+
+/* Skeleton loaders */
+.skeleton-row {
+  display: flex; gap: 12px; padding: 10px 0;
+  border-bottom: 1px solid var(--border, #e5e7eb);
+}
+.skeleton-cell {
+  height: 14px; border-radius: 4px;
+  background: var(--surface, #e5e7eb);
+  animation: sk-pulse 1.5s ease-in-out infinite;
+}
+.skeleton-cell.w-40 { width: 40%; }
+.skeleton-cell.w-24 { width: 24%; }
+.skeleton-cell.w-16 { width: 16%; }
+@keyframes sk-pulse { 0%,100% { opacity:1; } 50% { opacity:.35; } }

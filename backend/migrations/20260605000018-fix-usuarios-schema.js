@@ -7,15 +7,16 @@ module.exports = {
       allowNull: true,
     });
 
-    // Add firebase_uid column for Google/Apple SSO
-    await queryInterface.addColumn('usuarios', 'firebase_uid', {
-      type: Sequelize.STRING(128),
-      allowNull: true,
-      unique: true,
-      after: 'email',
-    });
-
-    await queryInterface.addIndex('usuarios', ['firebase_uid']);
+    // Add firebase_uid only if not already present (20260608000001 may have run first)
+    const desc = await queryInterface.describeTable('usuarios');
+    if (!desc.firebase_uid) {
+      await queryInterface.addColumn('usuarios', 'firebase_uid', {
+        type: Sequelize.STRING(128),
+        allowNull: true,
+        unique: true,
+      });
+      await queryInterface.addIndex('usuarios', ['firebase_uid']);
+    }
   },
 
   async down(queryInterface, Sequelize) {
