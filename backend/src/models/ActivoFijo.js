@@ -103,6 +103,7 @@ module.exports = (sequelize) => {
       vida_util_anos: {
         type: DataTypes.INTEGER,
         allowNull: true,
+        validate: { min: 0 },
         comment: 'Vida útil estimada en años (para proyección de reposición)',
       },
       imagen_url: {
