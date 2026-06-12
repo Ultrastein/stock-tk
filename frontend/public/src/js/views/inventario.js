@@ -5,6 +5,7 @@ import { renderLayout }    from './_layout.js';
 import { DataTable }       from '../components/DataTable.js';
 import { Modal }           from '../components/Modal.js';
 import { Toast }           from '../components/Toast.js';
+import { showSkeleton }    from '../components/Skeleton.js';
 import { inventario as inventarioApi } from '../api/endpoints.js';
 import { get as getState } from '../store/state.js';
 
@@ -95,6 +96,8 @@ export default class InventarioView {
 
   async _load() {
     try {
+      const tbody = this._dt._el?.querySelector('tbody')
+      if (tbody) showSkeleton(tbody)
       const res = await inventarioApi.listar();
       this._dt.setData(Array.isArray(res.data) ? res.data : []);
     } catch (e) { Toast.show('Error al cargar sesiones', 'error'); }

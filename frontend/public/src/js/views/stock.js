@@ -6,6 +6,7 @@ import { renderLayout }  from './_layout.js';
 import { DataTable }     from '../components/DataTable.js';
 import { Modal }         from '../components/Modal.js';
 import { Toast }         from '../components/Toast.js';
+import { showSkeleton }  from '../components/Skeleton.js';
 import {
   productos    as productosApi,
   activos      as activosApi,
@@ -232,6 +233,8 @@ export default class StockView {
 
   async _loadProductos() {
     try {
+      const tbody = this._dtProductos._el?.querySelector('tbody')
+      if (tbody) showSkeleton(tbody)
       const res = await productosApi.listar({ page: this.currentPage, limit: 50 });
       this._dtProductos.setData(Array.isArray(res.data) ? res.data : []);
 
@@ -254,6 +257,8 @@ export default class StockView {
 
   async _loadActivos() {
     try {
+      const tbody = this._dtActivos._el?.querySelector('tbody')
+      if (tbody) showSkeleton(tbody)
       const res = await activosApi.listar({ page: this.currentActivosPage, limit: 50 });
       this._dtActivos.setData(Array.isArray(res.data) ? res.data : []);
 
